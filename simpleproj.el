@@ -52,15 +52,6 @@
 ;; (defun project-source-root (project-settings)
 ;;   (cdr (assoc 'project-source project-settings)))
 
-(defun project-build-root (project-settings)
-  (cdr (assoc 'project-build-root project-settings)))
-
-(defun project-compile-command-json (project-settings)
-  (cdr (assoc 'project-compile-cmd-json project-settings)))
-
-(defun project-compile-command-ht (project-settings)
-  (cdr (assoc 'project-filename-to-compilation project-settings)))
-
 (defun project-build-compilation-hash (json)
   (let ((filename-to-compilation-command (make-hash-table :test 'equal :size 5500)))
     (mapc (lambda (x)
@@ -74,8 +65,6 @@
   (gethash fn (project-compile-command-ht project-settings)))
 
 (defun project-for-current-buffer ()
-  ;; Eventually look through list of defined projects for the one
-  ;; whose source root contains the current buffer.
   (let ((filename (buffer-file-name)))
     (car (seq-filter (lambda (project)
                        (if (string-prefix-p (project-source project) filename t)
@@ -98,17 +87,3 @@
 
 (defun make-compile-commands-json (pathname)
   (json-parse-string (file-to-string pathname)))
-
-
-
-;; (defmacro project-accessor (field-symbol body...)
-;;   `(defun ,(intern (concat "project-" (symbol-name (eval field-symbol)))) (&optional project)
-;;      (if (bound-and-true-p project)
-;;          (project-setting-lookup ,(eval field-symbol) project)
-;;        (project-setting-lookup ,(eval field-symbol) (project-for-current-buffer)))))
-
-;; (macroexpand '(project-accessor 'source-root ()))
-;; (defalias 'project-source-root #'(lambda (&optional project) (if (bound-and-true-p project) (project-setting-lookup source-root project) (project-setting-lookup source-root ...))))
-;; (defalias 'project-source #'(lambda (&optional project) (if (bound-and-true-p project) (project-setting-lookup source project) (project-setting-lookup source (project-for-current-buffer)))))
-
-;; (project-accessor 'source-root ())
