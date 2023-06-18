@@ -2,12 +2,21 @@
   (list 'progn `(cl-loop for (precondition-form
                               error-clause)
                          on ,forms by 'cddr
-                         do (cond ((not (eval precondition-form)) (error error-clause))))))
+                         do (cond ((not (eval precondition-form))
+                                   ;; Order of clauses to OR is
+                                   ;; important because get will raise
+                                   ;; an error if it's a string.
+                                   (cond ((or (stringp error-clause)
+                                              (and (symbolp error-clause)
+                                                   (get error-clause 'error-conditions)))
+                                          (error error-clause)
+                                          (t (eval error-clause)))))))))
 
 (defun add-string-to-trie (trie str idx)
   (precondition
-   '((not (equal trie nil)) "Trie is nil"
-     (> idx 0)              "Invalid index"))
+   '((not (equal trie nil)) (setq trie (cons ?b 'nextlevel2))
+     (>= idx 0)             "Invalid index"
+     (not (equal str nil))  "No input string"))
   (let* ((ch (aref str idx))
          (trie-node (cond (trie
                            (search-or-create-trie-node trie ch))

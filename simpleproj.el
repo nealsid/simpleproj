@@ -14,8 +14,8 @@
   (source-root nil :documentation "Source root for the project")
   (build-root nil :documentation "Build root for the project")
   (compile-commands-command nil :documentation "Command to generate compile_commands.json file")
-  (filename-to-compile-command-ht nil :documentation "Hash table of filename to compilation command")
-  (change-directory-for-flymake nil :documentation "If set, change working directory to this option's value prior to flymake command invocations"))
+  (filename-to-compile-command-ht nil :documentation "Hash table of filename to compilation command"))
+
 
 (defun simpleproj-find-matching-project-for-buffer ()
   "Returns the matching project for the current buffer or NIL if none found."
