@@ -9,12 +9,12 @@
                                    (cond ((or (stringp error-clause)
                                               (and (symbolp error-clause)
                                                    (get error-clause 'error-conditions)))
-                                          (error error-clause)
-                                          (t (eval error-clause)))))))))
+                                          (error error-clause))
+                                          (t (eval error-clause))))))))
 
 (defun add-string-to-trie (trie str idx)
   (precondition
-   '((not (equal trie nil)) (setq trie (cons ?b 'nextlevel2))
+   '((not (equal trie nil)) (setq trie `(,(cons ?b 'nextlevel)))
      (>= idx 0)             "Invalid index"
      (not (equal str nil))  "No input string"))
   (let* ((ch (aref str idx))
@@ -24,7 +24,7 @@
     (cond ((eq idx (- (length str) 1))
            trie-node)
           (t (add-string-to-trie (cdr trie-node) str (+ idx 1))))
-    trie-node))
+    trie))
 
 (create-or-update-trie nil (list "aaa" "bbb"))
 (("b" . nextlevel) ("a" . nextlevel))
