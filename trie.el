@@ -3,6 +3,7 @@
                               error-clause)
                          on ,forms by 'cddr
                          do (cond ((not (eval precondition-form))
+                                   (message "listp: %s " (listp error-clause))
                                    ;; Order of clauses to OR is
                                    ;; important because get will raise
                                    ;; an error if it's a string.
@@ -10,21 +11,37 @@
                                               (and (symbolp error-clause)
                                                    (get error-clause 'error-conditions)))
                                           (error error-clause))
-                                          (t (eval error-clause))))))))
+                                         ((listp error-clause)
+                                          (apply 'error error-clause))
+                                         (t (eval error-clause))))))))
 
 (defun add-string-to-trie (trie str idx)
+  (print (list trie str idx))
+  (print (list "hello: " (length> str idx)))
   (precondition
-   '((not (equal trie nil)) (setq trie `(,(cons ?b 'nextlevel)))
-     (>= idx 0)             "Invalid index"
-     (not (equal str nil))  "No input string"))
-  (let* ((ch (aref str idx))
-         (trie-node (cond (trie
-                           (search-or-create-trie-node trie ch))
-                          (t (list (cons ch nil))))))
-    (cond ((eq idx (- (length str) 1))
-           trie-node)
-          (t (add-string-to-trie (cdr trie-node) str (+ idx 1))))
-    trie))
+   '((not (equal str nil)) ("No input string")
+     (>= idx 0)            ("Invalid index: %s" idx)))
+
+;;          (not (equal trie nil))      "Nil trie"))
+  ;; Handle nil trie as a special case
+  (if (equal trie nil)
+      (progn
+        (setq trie `(,(cons (aref str idx) nil)))
+        (setf (cdr (nth 0 trie))
+              (if (equal idx (- (length str) 1))
+                  nil
+                (add-string-to-trie nil str (+ 1 idx))))
+        trie))
+
+  ;; (let* ((ch (aref str idx))
+  ;;        (trie-node (cond (trie
+  ;;                          (search-or-create-trie-node trie ch))
+  ;;                         (t (list (cons ch nil))))))
+  ;;   (cond ((eq idx (- (length str) 1))
+  ;;          trie-node)
+  ;;         (t (add-string-to-trie (cdr trie-node) str (+ idx 1))))
+  ;;   trie)
+  )
 
 (create-or-update-trie nil (list "aaa" "bbb"))
 (("b" . nextlevel) ("a" . nextlevel))
