@@ -17,10 +17,10 @@
 
 (defun add-string-to-trie (trie str idx)
   (print (list trie str idx))
-  (print (list "hello: " (length> str idx)))
+  (print (list "hello: " (length> str (+ 1 idx))))
   (precondition
-   '((not (equal str nil)) ("No input string")
-     (>= idx 0)            ("Invalid index: %s" idx)))
+   `((not (equal str nil)) ("No input string")
+     (and (>= idx 0) (length> str (+ 1 idx))) ,(list "Invalid index: %s" idx)))
 
 ;;          (not (equal trie nil))      "Nil trie"))
   ;; Handle nil trie as a special case
