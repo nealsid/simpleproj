@@ -3,7 +3,6 @@
                               error-clause)
                          on ,forms by 'cddr
                          do (cond ((not (eval precondition-form))
-                                   (message "listp: %s " (listp error-clause))
                                    ;; Order of clauses to OR is
                                    ;; important because get will raise
                                    ;; an error if it's a string.
@@ -15,18 +14,18 @@
                                           (apply 'error error-clause))
                                          (t (eval error-clause))))))))
 
-(defun add-string-to-trie (trie str idx)
-  (print (list trie str idx))
-  (print (list "hello: " (length> str (+ 1 idx))))
+(defun add-string-to-trie (trie str str-idx)
   (precondition
-   `((not (equal str nil)) ("No input string")
-     (and (>= idx 0) (length> str (+ 1 idx))) ,(list "Invalid index: %s" idx)))
+   `((not (equal str nil))                    ("No input string")
+     (and (>= str-idx 0)
+          (length> str (+ 1 str-idx))) ,(list "Invalid index: %s" str-idx)))
 
-;;          (not (equal trie nil))      "Nil trie"))
   ;; Handle nil trie as a special case
   (if (equal trie nil)
       (progn
-        (setq trie `(,(cons (aref str idx) nil)))
+        (setq trie `(,(cons (aref str str-idx) nil)))
+        (setq trie-idx 0))
+    (setq trie-idx
         (setf (cdr (nth 0 trie))
               (if (equal idx (- (length str) 1))
                   nil
