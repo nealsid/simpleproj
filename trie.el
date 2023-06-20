@@ -40,16 +40,16 @@
                     (equal (car cell) char))
                   trie)
       (progn
-        (let ((newnode (cons char nil)))
-          (setf (cdr trie) (list newnode (cdr trie)))
-          newnode))))
+        (let ((new-trie-node-entry (cons char nil)))
+          (setf (cdr trie) (list new-trie-node-entry (cdr trie)))
+          new-trie-node-entry))))
 
-(create-or-update-trie nil (list "aaa" "bbb"))
-(("b" . nextlevel) ("a" . nextlevel))
-
-(setq test-trie `(,(cons ?a 'nextlevel) ,(cons ?b 'nextlevel2)))
-(search-or-create-trie-node test-trie ?c)
-
-(macroexpand '(setf test-trie (cons (cons 'a 'b) test-trie)))
-
-(setq test-trie (cons (cons 'a 'b) test-trie))
+(defun print-trie-strings (trie)
+  (mapcar (lambda (trie-node-entry)
+            (cond ((characterp (car trie-node-entry))
+                   (princ (char-to-string (car trie-node-entry))))
+                  (t (princ (car trie-node-entry))))
+            (cond ((not (equal (cdr trie-node-entry) nil))
+                   (print-trie-strings (cdr trie-node-entry)))
+                  (t (princ "\n"))))
+          trie))
