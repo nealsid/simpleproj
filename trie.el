@@ -19,12 +19,12 @@
    `((not (equal str nil))                    ("No input string")
      (and (>= str-idx 0)
           (length> str str-idx)) ,(list "Invalid index: %s" str-idx)
-     (or (equal trie nil) (listp trie)) ("Trie arg has invalid type")))
+     (or (equal trie nil) (symbolp trie) (listp trie)) ,(list "Trie arg has invalid type: %s" (type-of trie))))
 
   ;; Handle nil trie as a special case
   (if (equal trie nil)
       (progn
-        (setq trie `(,(cons (aref str str-idx) nil)))
+        (setq trie (list (cons (aref str str-idx) nil)))
         (setq node (nth 0 trie)))
     (setq node (search-or-create-trie-node-entry trie (aref str str-idx))))
 
@@ -53,3 +53,11 @@
                    (print-trie-strings (cdr trie-node-entry)))
                   (t (princ "\n"))))
           trie))
+
+(defun map-trie-strings (trie fn-to-call current-string)
+  (mapc (lambda (trie-node-entry)
+          (cond ((equal (cdr trie-node-entry) nil)
+                 (apply fn-to-call (list (concat current-string (char-to-string (car trie-node-entry))))))
+                (t (map-trie-strings (cdr trie-node-entry) fn-to-call (concat current-string (char-to-string (car trie-node-entry)))))))
+        trie)
+  nil)
