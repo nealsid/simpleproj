@@ -18,14 +18,15 @@
   (precondition
    `((not (equal str nil))                    ("No input string")
      (and (>= str-idx 0)
-          (>= (length str) (1+ str-idx))) ,(list "Invalid index: %s" str-idx)))
+          (length> str str-idx)) ,(list "Invalid index: %s" str-idx)
+     (or (equal trie nil) (listp trie)) ("Trie arg has invalid type")))
 
   ;; Handle nil trie as a special case
   (if (equal trie nil)
       (progn
         (setq trie `(,(cons (aref str str-idx) nil)))
         (setq node (nth 0 trie)))
-    (setq node (search-or-create-trie-node trie (aref str str-idx))))
+    (setq node (search-or-create-trie-node-entry trie (aref str str-idx))))
 
   (cond ((equal str-idx (1- (length str)))
          trie)
@@ -34,13 +35,13 @@
              trie))))
 
 
-(defun search-or-create-trie-node (trie char)
+(defun search-or-create-trie-node-entry (trie char)
   (or (cl-find-if (lambda (cell)
                     (equal (car cell) char))
                   trie)
       (progn
         (let ((newnode (cons char nil)))
-          (setcdr trie (list newnode (cdr trie)))
+          (setf (cdr trie) (list newnode (cdr trie)))
           newnode))))
 
 (create-or-update-trie nil (list "aaa" "bbb"))
