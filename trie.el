@@ -18,29 +18,30 @@
   (precondition
    `((not (equal str nil))                    ("No input string")
      (and (>= str-idx 0)
-          (length> str (+ 1 str-idx))) ,(list "Invalid index: %s" str-idx)))
+          (>= (length str) (1+ str-idx))) ,(list "Invalid index: %s" str-idx)))
 
   ;; Handle nil trie as a special case
   (if (equal trie nil)
       (progn
         (setq trie `(,(cons (aref str str-idx) nil)))
-        (setq trie-idx 0))
-    (setq trie-idx
-        (setf (cdr (nth 0 trie))
-              (if (equal idx (- (length str) 1))
-                  nil
-                (add-string-to-trie nil str (+ 1 idx))))
-        trie))
+        (setq node (nth 0 trie)))
+    (setq node (search-or-create-trie-node trie (aref str str-idx))))
 
-  ;; (let* ((ch (aref str idx))
-  ;;        (trie-node (cond (trie
-  ;;                          (search-or-create-trie-node trie ch))
-  ;;                         (t (list (cons ch nil))))))
-  ;;   (cond ((eq idx (- (length str) 1))
-  ;;          trie-node)
-  ;;         (t (add-string-to-trie (cdr trie-node) str (+ idx 1))))
-  ;;   trie)
-  )
+  (cond ((equal str-idx (1- (length str)))
+         trie)
+        (t (progn
+             (setf (cdr node) (add-string-to-trie (cdr node) str (1+ str-idx)))
+             trie))))
+
+
+(defun search-or-create-trie-node (trie char)
+  (or (cl-find-if (lambda (cell)
+                    (equal (car cell) char))
+                  trie)
+      (progn
+        (let ((newnode (cons char nil)))
+          (setcdr trie (list newnode (cdr trie)))
+          newnode))))
 
 (create-or-update-trie nil (list "aaa" "bbb"))
 (("b" . nextlevel) ("a" . nextlevel))
@@ -51,12 +52,3 @@
 (macroexpand '(setf test-trie (cons (cons 'a 'b) test-trie)))
 
 (setq test-trie (cons (cons 'a 'b) test-trie))
-
-(defun search-or-create-trie-node (trie char)
-  (or (cdr (cl-find-if (lambda (cell)
-                    (equal (car cell) char))
-                  trie))
-      (progn
-        (let ((newnode (cons char "foo")))
-          (setcdr trie (list newnode (cdr trie)))
-          (cdr newnode)))))
