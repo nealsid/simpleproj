@@ -69,9 +69,10 @@
                                    (equal (car cell) (aref lookup-string idx)))
                                  trie)))
     (cond (trie-lookup
-           (cond ((equal idx (1- (length lookup-string)))
+           (cond ((and (equal idx (1- (length lookup-string)))
+                       (trie-entry-terminal-p (cdr trie-lookup)))
                   t)
-                 (t (lookup-string-recursive (cdr trie-lookup) lookup-string (1+ idx)))))
+                 (t (lookup-string-recursive (caddr trie-lookup) lookup-string (1+ idx)))))
           (t nil))))
 
 (defun lookup-string (trie lookup-string)
@@ -83,8 +84,11 @@
 
   (list terminal next-level-trie user-data))
 
-(defun set-trie-entry-terminal (trie-entry is-terminal)
-  (setf (cadr trie-entry) is-terminal))
+(defun set-trie-entry-terminal (trie-entry-data is-terminal)
+  (setf (cadr trie-entry-data) is-terminal))
+
+(defun trie-entry-terminal-p (trie-entry-data)
+  (car trie-entry-data))
 
 (defun trie-entry-data-next-level (trie-entry-data)
   (cadr trie-entry-data))
