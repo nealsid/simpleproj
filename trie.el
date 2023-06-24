@@ -72,6 +72,8 @@
            (cond ((and (equal idx (1- (length lookup-string)))
                        (trie-entry-terminal-p (cdr trie-lookup)))
                   t)
+                 ((equal idx (1- (length lookup-string)))
+                  nil)
                  (t (lookup-string-recursive (caddr trie-lookup) lookup-string (1+ idx)))))
           (t nil))))
 
