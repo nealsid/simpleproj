@@ -14,19 +14,6 @@
                                           (apply 'error error-clause))
                                          (t (eval error-clause))))))))
 
-(defun make-trie-node-entry (char child-trie)
-  (precondition
-   `((characterp char) ("Wrong type, characterp")))
-  (cons char child-trie))
-
-(defun make-trie-node ()
-  nil)
-
-(defun add-trie-node-entry-to-trie-node (trie node-entry)
-  (cond ((eq trie nil)
-         (set trie (list node-entry)))
-        (t (setf (cdr trie) (cons node-entry (cdr trie))))))
-
 (defun add-string-to-trie (trie str str-idx)
   (precondition
    `((not (equal str nil))        ("No input string")
@@ -51,6 +38,18 @@
              (setf (cdr trie-node-entry) (add-string-to-trie (cdr trie-node-entry) str (1+ str-idx)))
              trie))))
 
+(defun lookup-string-recursive (trie lookup-string idx)
+  (let ((trie-lookup (cl-find-if (lambda (cell)
+                                   (equal (car cell) (aref lookup-string idx)))
+                                 trie)))
+    (cond (trie-lookup
+           (cond ((equal idx (1- (length lookup-string)))
+                  t)
+                 (t (lookup-string-recursive (cdr trie-lookup) lookup-string (1+ idx)))))
+          (t nil))))
+
+(defun lookup-string (trie lookup-string)
+  (lookup-string-recursive trie lookup-string 0))
 
 (defun search-or-create-trie-node-entry (trie char)
   (or (cl-find-if (lambda (cell)
@@ -70,16 +69,6 @@
                                  ;; the new-trie-node-entry cons cell.
                                  (t (apply 'list new-trie-node-entry (cdr trie)))))
           new-trie-node-entry))))
-
-(defun print-trie-strings (trie)
-  (mapcar (lambda (trie-node-entry)
-            (cond ((characterp (car trie-node-entry))
-                   (princ (char-to-string (car trie-node-entry))))
-                  (t (princ (car trie-node-entry))))
-            (cond ((not (equal (cdr trie-node-entry) nil))
-                   (print-trie-strings (cdr trie-node-entry)))
-                  (t (princ "\n"))))
-          trie))
 
 (defun map-trie-strings (trie fn-to-call current-string)
   (mapc (lambda (trie-node-entry)
