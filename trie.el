@@ -14,24 +14,41 @@
                                           (apply 'error error-clause))
                                          (t (eval error-clause))))))))
 
+(defun make-trie-node-entry (char child-trie)
+  (precondition
+   `((characterp char) ("Wrong type, characterp")))
+  (cons char child-trie))
+
+(defun make-trie-node ()
+  nil)
+
+(defun add-trie-node-entry-to-trie-node (trie node-entry)
+  (cond ((eq trie nil)
+         (set trie (list node-entry)))
+        (t (setf (cdr trie) (cons node-entry (cdr trie))))))
+
 (defun add-string-to-trie (trie str str-idx)
   (precondition
-   `((not (equal str nil))                    ("No input string")
+   `((not (equal str nil))        ("No input string")
      (and (>= str-idx 0)
           (length> str str-idx)) ,(list "Invalid index: %s" str-idx)
-     (or (equal trie nil) (symbolp trie) (listp trie)) ,(list "Trie arg has invalid type: %s" (type-of trie))))
+     (or (equal trie nil)
+         (symbolp trie)
+         (listp trie))           ,(list "Trie arg has invalid type: %s" (type-of trie))))
 
   ;; Handle nil trie as a special case
   (if (equal trie nil)
       (progn
         (setq trie (list (cons (aref str str-idx) nil)))
-        (setq node (nth 0 trie)))
-    (setq node (search-or-create-trie-node-entry trie (aref str str-idx))))
+        (setq trie-node-entry (nth 0 trie)))
+    (setq trie-node-entry (search-or-create-trie-node-entry trie (aref str str-idx)))
+    (cl-assert (consp trie-node-entry))
+    (cl-assert (member trie-node-entry trie)))
 
   (cond ((equal str-idx (1- (length str)))
          trie)
         (t (progn
-             (setf (cdr node) (add-string-to-trie (cdr node) str (1+ str-idx)))
+             (setf (cdr trie-node-entry) (add-string-to-trie (cdr trie-node-entry) str (1+ str-idx)))
              trie))))
 
 
@@ -41,7 +58,17 @@
                   trie)
       (progn
         (let ((new-trie-node-entry (cons char nil)))
-          (setf (cdr trie) (list new-trie-node-entry (cdr trie)))
+          (setf (cdr trie) (cond ((equal (cdr trie) nil)
+                                  ;; If the cdr is nil, we can return
+                                  ;; the entry as a single-element list
+                                  (list new-trie-node-entry))
+                                 ;; If the cdr is not nil, we have to
+                                 ;; flatten the cdr so that list does
+                                 ;; not create an element containing a
+                                 ;; list, so use apply. I tried using
+                                 ;; append, as well, but that flattens
+                                 ;; the new-trie-node-entry cons cell.
+                                 (t (apply 'list new-trie-node-entry (cdr trie)))))
           new-trie-node-entry))))
 
 (defun print-trie-strings (trie)

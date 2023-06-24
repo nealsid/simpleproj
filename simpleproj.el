@@ -77,12 +77,15 @@
 (defun simpleproj-compilation-command-json-exists-p (sproj-project)
   (file-exists-p (concat (simple-project-build-root sproj-project) "/compile_commands.json")))
 
+(setq filename-trie ())
+
 (defun simpleproj-build-compilation-hash (json)
   (let ((filename-to-compilation-command (make-hash-table :test 'equal :size (length json))))
     (mapc (lambda (x)
             (let ((file-full-path (gethash "file" x))
                   (file-compilation-command (gethash "command" x)))
-              (puthash file-full-path file-compilation-command filename-to-compilation-command)))
+              (puthash file-full-path file-compilation-command filename-to-compilation-command)
+              (setq filename-trie (add-string-to-trie filename-trie file-full-path 0))))
           json)
     filename-to-compilation-command))
 
