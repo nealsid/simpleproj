@@ -26,22 +26,22 @@
   ;; Handle nil trie as a special case
   (if (equal trie nil)
       (progn
-        (setq trie (list (make-trie-node (aref str str-idx) nil nil nil)))
+        (setq trie (list (make-trie-node-entry (aref str str-idx) nil nil nil)))
         (setq trie-node-entry (nth 0 trie)))
     (setq trie-node-entry (search-or-create-trie-node-entry trie (aref str str-idx)))
     (cl-assert (consp trie-node-entry))
     (cl-assert (member trie-node-entry trie)))
 
-  (cond ((equal str-idx (1- (length str)))
+  (cond ((index-end-of-string-p str-idx str)
          (set-trie-entry-terminal trie-node-entry t)
          (set-trie-entry-user-data trie-node-entry entry-data)
          trie)
         (t (progn
-             (setf (caddr trie-node-entry) ;; TODO write accessors for
-                                           ;; trie data rather than
-                                           ;; using c*r functions
-                                           ;; directly.
-                   (add-string-to-trie (caddr trie-node-entry) str entry-data (1+ str-idx)))
+             (set-trie-entry-next-level trie-node-entry
+                                        (add-string-to-trie (trie-entry-data-next-level trie-node-entry)
+                                                            str
+                                                            entry-data
+                                                            (1+ str-idx)))
              trie))))
 
 (defun search-or-create-trie-node-entry (trie char)
@@ -49,7 +49,7 @@
                     (equal (car cell) char))
                   trie)
       (progn
-        (let ((new-trie-node-entry (make-trie-node char nil nil nil)))
+        (let ((new-trie-node-entry (make-trie-node-entry char nil nil nil)))
           (setf (cdr trie) (cond ((equal (cdr trie) nil)
                                   ;; If the cdr is nil, we can return
                                   ;; the entry as a single-element list
@@ -84,32 +84,32 @@
                    (t (lookup-string-recursive (trie-entry-data-next-level trie-lookup) lookup-string (1+ idx))))))
           (t nil))))
 
-(defun make-trie-node (ch terminal-p next-trie-level user-data)
+(defun make-trie-node-entry (ch terminal-p next-trie-level user-data)
   (precondition
    `((booleanp terminal-p) ("Terminal is not boolean")
      (characterp ch) ("ch is not character")))
   (list ch terminal-p next-trie-level user-data))
 
-(defun set-trie-entry-terminal (trie-node is-terminal)
-  (setf (nth 1 trie-node) is-terminal))
+(defun set-trie-entry-terminal (trie-node-entry is-terminal)
+  (setf (nth 1 trie-node-entry) is-terminal))
 
-(defun set-trie-entry-next-level (trie-node next-trie)
-  (setf (nth 2 trie-node) next-trie))
+(defun set-trie-entry-next-level (trie-node-entry next-trie)
+  (setf (nth 2 trie-node-entry) next-trie))
 
-(defun set-trie-entry-user-data (trie-node user-data)
-  (setf (nth 3 trie-node) user-data))
+(defun set-trie-entry-user-data (trie-node-entry user-data)
+  (setf (nth 3 trie-node-entry) user-data))
 
-(defun trie-entry-character (trie-node)
-  (nth 0 trie-node))
+(defun trie-entry-character (trie-node-entry)
+  (nth 0 trie-node-entry))
 
-(defun trie-entry-terminal-p (trie-node)
-  (nth 1 trie-node))
+(defun trie-entry-terminal-p (trie-node-entry)
+  (nth 1 trie-node-entry))
 
-(defun trie-entry-data-next-level (trie-node)
-  (nth 2 trie-node))
+(defun trie-entry-data-next-level (trie-node-entry)
+  (nth 2 trie-node-entry))
 
-(defun trie-entry-data-user-data (trie-node)
-  (nth 3 trie-node))
+(defun trie-entry-data-user-data (trie-node-entry)
+  (nth 3 trie-node-entry))
 
 (defun map-trie-strings (trie fn-to-call current-string)
   (mapc (lambda (trie-node-entry)
