@@ -14,7 +14,10 @@
                                           (apply 'error error-clause))
                                          (t (eval error-clause))))))))
 
-(defun add-string-to-trie (trie str str-idx)
+(defun make-trie-node (ch terminal-p next-trie-level user-data)
+  (list ch terminal-p next-trie-level user-data))
+
+(defun add-string-to-trie (trie str entry-data str-idx)
   (precondition
    `((not (equal str nil))        ("No input string")
      (and (>= str-idx 0)
@@ -35,13 +38,14 @@
 
   (cond ((equal str-idx (1- (length str)))
          (set-trie-entry-terminal trie-node-entry t)
+         (set-trie-entry-user-data trie-node-entry entry-data)
          trie)
         (t (progn
              (setf (caddr trie-node-entry) ;; TODO write accessors for
                                            ;; trie data rather than
                                            ;; using c*r functions
                                            ;; directly.
-                   (add-string-to-trie (caddr trie-node-entry) str (1+ str-idx)))
+                   (add-string-to-trie (caddr trie-node-entry) str entry-data (1+ str-idx)))
              trie))))
 
 (defun search-or-create-trie-node-entry (trie char)
@@ -71,7 +75,8 @@
     (cond (trie-lookup
            (cond ((and (equal idx (1- (length lookup-string)))
                        (trie-entry-terminal-p (cdr trie-lookup)))
-                  t)
+                  (or (trie-entry-data-user-data (cdr trie-lookup))
+                      t))
                  ((equal idx (1- (length lookup-string)))
                   nil)
                  (t (lookup-string-recursive (caddr trie-lookup) lookup-string (1+ idx)))))
@@ -89,11 +94,17 @@
 (defun set-trie-entry-terminal (trie-entry-data is-terminal)
   (setf (cadr trie-entry-data) is-terminal))
 
+(defun set-trie-entry-user-data (trie-entry-data user-data)
+  (setf (cadddr trie-entry-data) user-data))
+
 (defun trie-entry-terminal-p (trie-entry-data)
   (car trie-entry-data))
 
 (defun trie-entry-data-next-level (trie-entry-data)
   (cadr trie-entry-data))
+
+(defun trie-entry-data-user-data (trie-entry-data)
+  (caddr trie-entry-data))
 
 (defun map-trie-strings (trie fn-to-call current-string)
   (mapc (lambda (trie-node-entry)
