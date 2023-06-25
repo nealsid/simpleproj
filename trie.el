@@ -81,7 +81,7 @@
                     (or (trie-entry-data-user-data trie-lookup)
                         t))
                    (at-end-of-string nil)
-                   (t (lookup-string-recursive (caddr trie-lookup) lookup-string (1+ idx))))))
+                   (t (lookup-string-recursive (trie-entry-data-next-level trie-lookup) lookup-string (1+ idx))))))
           (t nil))))
 
 (defun make-trie-node (ch terminal-p next-trie-level user-data)
