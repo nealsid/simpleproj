@@ -40,11 +40,17 @@
 
 (add-hook 'find-file-hook 'simpleproj-find-file-hook)
 
+;; Specify a depth of 10 so that simpleproj-configure-flymake happens
+;; after simpleproj-build-compilation-trie-hook.
 (add-hook 'simpleproj-minor-mode-hook 'simpleproj-build-compilation-trie-hook 10)
 (add-hook 'simpleproj-minor-mode-hook 'simpleproj-configure-flymake 10)
 
-(defun simpleproj-flymake-cc-advice-change-wd
-    (orig-function report-fn &rest args)
+(defun simpleproj-flymake-cc-advice-change-wd (orig-function report-fn &rest args)
+  "Advice for flymake-cc to change the working directory to what is
+specified in compile_commands.json.  If the current buffer is not
+part of a simple project, just call the original function with no
+change in environment."
+
   (let* ((sproj (simpleproj-find-matching-project-for-buffer))
          (default-directory (cond (sproj (simpleproj-get-compilation-command-wd-for-buffer sproj))
                                   (t default-directory))))
@@ -66,7 +72,12 @@
 
 (defun simpleproj-build-compilation-trie-hook ()
   (and simpleproj-minor-mode
-       (let ((sproj (simpleproj-find-matching-project-for-buffer)))
+       (let ((sproj (simpleproj-find-matching-project-for-buffer))
+             (gc-cons-threshold 10000000000)) ; Abitrarily large
+                                              ; number to pause GC
+                                              ; while JSON parsing and
+                                              ; trie building are
+                                              ; happening.
          (when (simpleproj-compilation-command-json-exists-p sproj)
            (setf (simple-project-filename-to-compile-command-trie sproj)
                  (simpleproj-build-compilation-command-trie
