@@ -14,7 +14,7 @@
   (source-root nil :documentation "Source root for the project")
   (build-root nil :documentation "Build root for the project")
   (compile-commands-command nil :documentation "Command to generate compile_commands.json file")
-  (filename-to-compile-command-ht nil :documentation "Hash table of filename to compilation command"))
+  (filename-to-compile-command-trie nil :documentation "Trie of filename to compilation command"))
 
 
 (defun simpleproj-find-matching-project-for-buffer ()
@@ -40,27 +40,40 @@
 
 (add-hook 'find-file-hook 'simpleproj-find-file-hook)
 
-(add-hook 'simpleproj-minor-mode-hook 'simpleproj-build-compilation-hash-hook)
-(add-hook 'simpleproj-minor-mode-hook 'simpleproj-add-flymake-advice)
+(add-hook 'simpleproj-minor-mode-hook 'simpleproj-build-compilation-trie-hook 10)
+(add-hook 'simpleproj-minor-mode-hook 'simpleproj-configure-flymake 10)
 
-(defun simpleproj-add-flymake-advice ()
+(defun simpleproj-flymake-cc-advice-change-wd
+    (orig-function report-fn &rest args)
+  (message "hello")
+  (let* ((sproj (simpleproj-find-matching-project-for-buffer))
+         (default-directory (simpleproj-get-compilation-command-wd-for-buffer sproj)))
+    (funcall orig-function report-fn args)
+    (message "goodbye")))
 
-  )
+(defun simpleproj-configure-flymake ()
+  (let ((sproj (simpleproj-find-matching-project-for-buffer)))
+    (setq flymake-cc-command
+          (split-string (simpleproj-get-compilation-command-for-buffer sproj)))
+    (flymake-mode)))
+    ;; I would like to specify that the advice is buffer-local, but advice-add does not support doing so
+    ;; and add-function does not aappear to work in this situation
+;;    (advice-add 'flymake-cc :around #'simpleproj-flymake-cc-advice-change-wd)))
+       ;;         (add-function :around (local 'flymake-cc) #'simpleproj-flymake-cc-advice-change-wd)))
 
-(defun simpleproj-build-compilation-hash-hook ()
+(defun simpleproj-build-compilation-trie-hook ()
   (and simpleproj-minor-mode
        (let ((sproj (simpleproj-find-matching-project-for-buffer)))
          (when (simpleproj-compilation-command-json-exists-p sproj)
-           (setf (simple-project-filename-to-compile-command-ht sproj)
-                 (simpleproj-build-compilation-hash
+           (setf (simple-project-filename-to-compile-command-trie sproj)
+                 (simpleproj-build-compilation-command-trie
                   (make-compile-commands-json (concat (simple-project-build-root sproj) "/compile_commands.json"))))))))
 
 (cl-defun add-simple-project (&key project-name
                                    project-short-name
                                    source-root
                                    build-root
-                                   compile-commands-command
-                                   filename-to-compile-commands-ht)
+                                   compile-commands-command)
   (add-to-list 'simpleproj-projects
                (make-simple-project :project-name project-name
                                     :project-short-name project-short-name
@@ -77,25 +90,32 @@
 (defun simpleproj-compilation-command-json-exists-p (sproj-project)
   (file-exists-p (concat (simple-project-build-root sproj-project) "/compile_commands.json")))
 
-(setq filename-trie ())
-
-(defun simpleproj-build-compilation-hash (json)
-  (let ((filename-to-compilation-command (make-hash-table :test 'equal :size (length json))))
+(defun simpleproj-build-compilation-command-trie (json)
+  (let ((filename-trie nil))
     (mapc (lambda (x)
             (let ((file-full-path (gethash "file" x))
-                  (file-compilation-command (gethash "command" x)))
-              (puthash file-full-path file-compilation-command filename-to-compilation-command)
-              (setq filename-trie (add-string-to-trie filename-trie file-full-path 0))))
+                  (file-compilation-command (gethash "command" x))
+                  (file-compilation-wd (gethash "directory" x)))
+              (setq filename-trie (add-string-to-trie filename-trie
+                                                      file-full-path
+                                                      (list file-compilation-wd
+                                                            file-compilation-command)
+                                                      0))))
           json)
-    filename-to-compilation-command))
+    filename-trie))
 
-(defun simpleproj-get-compilation-command (sproj-project)
-  (gethash (buffer-file-name) (simple-project-filename-to-compile-command-ht sproj-project)))
+(defun simpleproj-get-compilation-command-wd-for-buffer (sproj-project)
+  (nth 0 (lookup-string (simple-project-filename-to-compile-command-trie sproj-project)
+                        (buffer-file-name))))
+
+(defun simpleproj-get-compilation-command-for-buffer (sproj-project)
+  (nth 1 (lookup-string (simple-project-filename-to-compile-command-trie sproj-project)
+                        (buffer-file-name))))
 
 (defun compile-using-project-compilation-command ()
   (interactive)
   (let* ((project (simpleproj-find-matching-project-for-buffer))
-         (compiler-command (simpleproj-get-compilation-command project))
+         (compiler-command (simpleproj-get-compilation-command-for-buffer project))
          (full-compile-command (concat "cd " (simple-project-build-root project) " && " compiler-command)))
     (compile full-compile-command)))
 
@@ -107,111 +127,3 @@
 
 (defun make-compile-commands-json (pathname)
   (json-parse-string (file-to-string pathname)))
-
-(defun simpleproj-flycheck-command-args-list ()
-  (list "gcc"
-        "-Wp,-MMD,drivers/net/wireless/broadcom/brcm80211/brcmfmac/.chip.o.d"
-        "-nostdinc"
-        "-I./arch/x86/include"
-        "-I./arch/x86/include/generated"
-        "-I./include"
-        "-I./arch/x86/include/uapi"
-        "-I./arch/x86/include/generated/uapi"
-        "-I./include/uapi"
-        "-I./include/generated/uapi"
-        "-include"
-        "./include/linux/compiler-version.h"
-        "-include"
-        "./include/linux/kconfig.h"
-        "-include"
-        "./include/linux/compiler_types.h"
-        "-D__KERNEL__"
-        "-fmacro-prefix-map=./="
-        "-Wall"
-        "-Wundef"
-        "-Werror=strict-prototypes"
-        "-Wno-trigraphs"
-        "-fno-strict-aliasing"
-        "-fno-common"
-        "-fshort-wchar"
-        "-fno-PIE"
-        "-Werror=implicit-function-declaration"
-        "-Werror=implicit-int"
-        "-Werror=return-type"
-        "-Wno-format-security"
-        "-funsigned-char"
-        "-std=gnu11"
-        "-mno-sse"
-        "-mno-mmx"
-        "-mno-sse2"
-        "-mno-3dnow"
-        "-mno-avx"
-        "-fcf-protection=branch"
-        "-fno-jump-tables"
-        "-m64"
-        "-falign-jumps=1"
-        "-falign-loops=1"
-        "-mno-80387"
-        "-mno-fp-ret-in-387"
-        "-mpreferred-stack-boundary=3"
-        "-mskip-rax-setup"
-        "-mtune=generic"
-        "-mno-red-zone"
-        "-mcmodel=kernel"
-        "-Wno-sign-compare"
-        "-fno-asynchronous-unwind-tables"
-        "-mindirect-branch=thunk-extern"
-        "-mindirect-branch-register"
-        "-mindirect-branch-cs-prefix"
-        "-mfunction-return=thunk-extern"
-        "-fno-jump-tables"
-        "-mharden-sls=all"
-        "-fpatchable-function-entry=16,16"
-        "-fno-delete-null-pointer-checks"
-        "-Wno-frame-address"
-        "-Wno-format-truncation"
-        "-Wno-format-overflow"
-        "-Wno-address-of-packed-member"
-        "-O2"
-        "-fno-allow-store-data-races"
-        "-Wframe-larger-than=2048"
-        "-fstack-protector-strong"
-        "-Wno-main"
-        "-Wno-unused-but-set-variable"
-        "-Wno-unused-const-variable"
-        "-Wno-dangling-pointer"
-        "-ftrivial-auto-var-init=zero"
-        "-fno-stack-clash-protection"
-        "-pg"
-        "-mrecord-mcount"
-        "-mfentry"
-        "-DCC_USING_FENTRY"
-        "-falign-functions=16"
-        "-Wdeclaration-after-statement"
-        "-Wvla"
-        "-Wno-pointer-sign"
-        "-Wcast-function-type"
-        "-Wno-stringop-truncation"
-        "-Wno-stringop-overflow"
-        "-Wno-restrict"
-        "-Wno-maybe-uninitialized"
-        "-Wno-array-bounds"
-        "-Wno-alloc-size-larger-than"
-        "-Wimplicit-fallthrough=5"
-        "-fno-strict-overflow"
-        "-fno-stack-check"
-        "-fconserve-stack"
-        "-Werror=date-time"
-        "-Werror=incompatible-pointer-types"
-        "-Werror=designated-init"
-        "-Wno-packed-not-aligned"
-        "-g"
-        "-gdwarf-5"
-        "-DDEBUG"
-        "-I./drivers/net/wireless/broadcom/brcm80211/brcmfmac"
-        "-I./drivers/net/wireless/broadcom/brcm80211/brcmfmac/../include"
-        "-DMODULE"
-        "-DKBUILD_BASENAME='\"chip\"'"
-        "-DKBUILD_MODNAME='\"brcmfmac\"'"
-        "-D__KBUILD_MODNAME=kmod_brcmfmac"
-        "-c" (buffer-file-name)))
