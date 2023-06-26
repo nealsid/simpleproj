@@ -45,21 +45,24 @@
 
 (defun simpleproj-flymake-cc-advice-change-wd
     (orig-function report-fn &rest args)
-  (message "hello")
   (let* ((sproj (simpleproj-find-matching-project-for-buffer))
-         (default-directory (simpleproj-get-compilation-command-wd-for-buffer sproj)))
-    (funcall orig-function report-fn args)
-    (message "goodbye")))
+         (default-directory (and sproj (simpleproj-get-compilation-command-wd-for-buffer sproj))))
+    (when sproj
+      (funcall orig-function report-fn args))))
 
 (defun simpleproj-configure-flymake ()
   (let ((sproj (simpleproj-find-matching-project-for-buffer)))
     (setq flymake-cc-command
           (split-string (simpleproj-get-compilation-command-for-buffer sproj)))
-    (flymake-mode)))
-    ;; I would like to specify that the advice is buffer-local, but advice-add does not support doing so
-    ;; and add-function does not aappear to work in this situation
-;;    (advice-add 'flymake-cc :around #'simpleproj-flymake-cc-advice-change-wd)))
-       ;;         (add-function :around (local 'flymake-cc) #'simpleproj-flymake-cc-advice-change-wd)))
+    (flymake-mode)
+    ;; It would be better to specify that the advice is buffer-local
+    ;; so that we only advise flymake-cc in buffers that are part of a
+    ;; simple project, but buffer-local advice only works for
+    ;; functions that are called by storing the function symbol in a
+    ;; variable and advising the variable (AFAICT), so we just have to
+    ;; advise it globally and do nothing in the case when the buffer
+    ;; is not related to a simple project.
+    (advice-add 'flymake-cc :around #'simpleproj-flymake-cc-advice-change-wd)))
 
 (defun simpleproj-build-compilation-trie-hook ()
   (and simpleproj-minor-mode
