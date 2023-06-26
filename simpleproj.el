@@ -46,9 +46,9 @@
 (defun simpleproj-flymake-cc-advice-change-wd
     (orig-function report-fn &rest args)
   (let* ((sproj (simpleproj-find-matching-project-for-buffer))
-         (default-directory (and sproj (simpleproj-get-compilation-command-wd-for-buffer sproj))))
-    (when sproj
-      (funcall orig-function report-fn args))))
+         (default-directory (cond (sproj (simpleproj-get-compilation-command-wd-for-buffer sproj))
+                                  (t default-directory))))
+    (funcall orig-function report-fn args)))
 
 (defun simpleproj-configure-flymake ()
   (let ((sproj (simpleproj-find-matching-project-for-buffer)))
