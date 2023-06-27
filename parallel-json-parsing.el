@@ -1,15 +1,17 @@
 (let ((gc-cons-threshold 1000000000))
   (benchmark 10 '(make-compile-commands-json (concat (simple-project-build-root (nth 0 simpleproj-projects)) "/compile_commands.json"))))
 
+g
+(let ((return-results (make-list 4 0)))
+  (dotimes (i 4)
+    (make-thread (lambda ()
+                     (message "hello"))))
+                   (make-compile-commands-json (concat (simple-project-build-root (nth 0 simpleproj-projects)) "/compile_commands-1.json"))))))
 
-(dotimes (i 3)
-  (setq return-results (make-list 4 0))
-  (make-thread (lambda ()
-                 (let ((x i))
-                   (make-compile-commands-json
-                   (message "%s" i)))))
 
+(all-threads)
 
+ (make-compile-commands-json (concat (simple-project-build-root (nth 0 simpleproj-projects)) "/compile_commands-" (1+ i) ".json"))
 (defun update-chunk-positions-to-be-on-json-record-bounaries (chunk-positions)
   (mapcar (lambda (position)
             (goto-char position)
