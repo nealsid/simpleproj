@@ -137,7 +137,7 @@ change in environment."
   "File to string function"
   (with-temp-buffer
     (insert-file-contents-literally file)
-    (buffer-string)))
+    (buffer-substring-no-properties (point-min) (point-max))))
 
 (defun make-compile-commands-json (pathname)
   (json-parse-string (file-to-string pathname)))
