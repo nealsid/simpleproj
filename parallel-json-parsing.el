@@ -12,17 +12,21 @@
    (concat (simple-project-build-root (nth 0 simpleproj-projects))
            "/compile_commands-" (number-to-string i) ".json")))
 
+
 (setq parsed-json nil)
 
 (setq return-results (make-list 4 0))
 (setq thread-id-list '())
-(let ((gc-cons-threshold 1000000000))
-  (benchmark-run 10
-    (dotimes (i 4)
-      (push (make-thread `(lambda () (parse-json-chunk ,i))) thread-id-list))
-    (dotimes (i 4)
-      (setf (nth i return-results)
-            (thread-join (nth i thread-id-list))))))
+
+(make-thread (lambda ()
+               (let ((gc-cons-threshold 1000000000))
+                 (message
+                  (benchmark-run 4
+                    (dotimes (i 4)
+                      (push (make-thread `(lambda () (parse-json-chunk ,i))) thread-id-list))
+                    (dotimes (i 4)
+                      (setf (nth i return-results)
+                            (thread-join (nth i thread-id-list))))))) "benchmark thread"))
 
 
 (all-threads)

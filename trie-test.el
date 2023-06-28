@@ -14,6 +14,14 @@
               (should (equal (lookup-string filename-trie fn) t)))
             filename-list)))
 
+(ert-deftest trie-verify-long-string-returns-nil ()
+  "Verifies that a lookup string longer than the trie height returns nil"
+  (let ((test-trie (add-string-to-trie nil " " nil 0)))
+    (add-string-to-trie test-trie "/main.c" nil 0)
+    (should (equal
+             (lookup-string test-trie "/main.cc")
+             nil))))
+
 (ert-deftest trie-verify-prefixes-are-found ()
   "Verifies that a trie that contains a string that is the prefix of another string in the trie is found."
   (let ((test-trie (add-string-to-trie nil " " nil 0)))
