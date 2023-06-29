@@ -104,11 +104,14 @@ change in environment."
 (defun simpleproj-compilation-command-json-exists-p (sproj-project)
   (file-exists-p (concat (simple-project-build-root sproj-project) "/compile_commands.json")))
 
+(defun remove-unncessary-command-line-options-for-flycheck (command-line)
+  (replace-regexp-in-string " \\(\\(-f[^ ]+\\)\\|\\(-g[^ ]*\\)\\|\\(-pg\\)\\|\\(-m[^ ]+\\)\\)" "" command-line))
+
 (defun simpleproj-build-compilation-command-trie (json)
   (let ((filename-trie nil))
     (mapc (lambda (x)
             (let ((file-full-path (gethash "file" x))
-                  (file-compilation-command (gethash "command" x))
+                  (file-compilation-command (remove-unncessary-command-line-options-for-flycheck (gethash "command" x)))
                   (file-compilation-wd (gethash "directory" x)))
               (setq filename-trie (add-string-to-trie filename-trie
                                                       file-full-path
