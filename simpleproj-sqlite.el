@@ -1,4 +1,4 @@
-(require 'sqlite3)
+(require 'sqlite)
 
 (defun create-database-for-simple-project (sproj)
   (let ((sproj-sqlite-db-filename (concat (simple-project-build-root sproj) "/sproj-compilation-commands.sqlite3")))
