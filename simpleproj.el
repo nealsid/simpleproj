@@ -108,13 +108,31 @@ change the working directory while the compiler is being invoked."
         ((member extension '("cc" "cpp" "cxx")) "c++")
         (t (error "Invalid extension %s" extension))))
 
+(defmacro replace-multiple-regexps (regexps-and-replacements input-string)
+  "Macro to, given multiple regular expressions, combine them into one as a set of OR clauses and generate a call to replace-regexp-in-string.  Meant for readability to avoid long regexps to replace multiple regexps in one call to replace-regexp-in-string."
+  ;; I'm not sure if this should be a macro, after writing it, there
+  ;; does not appear to be a need for expansion at compile time and it
+  ;; requires the caller to specify evaluation through backticks and
+  ;; commas. TODO rewrite as a function.
+  `(let ((temp-string ,input-string))
+     (cl-loop for regexp-and-replacement
+              in ,regexps-and-replacements
+              do (let ((regexp (car regexp-and-replacement))
+                       (replacement (cdr regexp-and-replacement)))
+                   (setq temp-string (replace-regexp-in-string regexp replacement temp-string))
+                   temp-string)
+              finally return temp-string)))
+
 (defun transform-build-command-line-into-flymake-command-line (command-line compilation-file-full-path)
   "Flymake expects a compiler command that reads from STDIN, which is not what we read from compile_commands.json. This function will remove options specifying a file on the command line, while also adding something like \"-x <lang> -\".  It is GCC specific and will need some more work to be generalized."
-  (let ((compilation-file-filename (file-name-nondirectory compilation-file-full-path))
-        (gcc-language-option (gcc-language-option-for-extension (downcase (file-name-extension compilation-file-full-path)))))
-    (replace-regexp-in-string "$" (string-join (list "-x" gcc-language-option "-") " ")
-                              (replace-regexp-in-string " -o +[^ ]+\\( \\|$\\)" " "
-                                                        (replace-regexp-in-string (concat " [^ ]*" compilation-file-filename "\\( \\|$\\)") "" command-line)))))
+  (let* ((compilation-file-filename (file-name-nondirectory compilation-file-full-path))
+         (gcc-language-option (gcc-language-option-for-extension (downcase (file-name-extension compilation-file-full-path))))
+         (language-and-stdin-option (string-join (list " -x" gcc-language-option "-") " "))
+         (remove-filename-regexp (concat " [^ ]*" compilation-file-filename "\\( \\|$\\)")))
+    (replace-multiple-regexps `(("$"                     . ,language-and-stdin-option)
+                                (" -o +[^ ]+\\( \\|$\\)" . " ")
+                                (,remove-filename-regexp   . " "))
+                              command-line)))
 
 (defun remove-unnecessary-command-line-options-for-flymake (command-line)
   (replace-regexp-in-string " \\(\\(-f[^ ]+\\)\\|\\(-g[^ ]*\\)\\|\\(-pg\\)\\|\\(-m[^ ]+\\)\\)" "" command-line))

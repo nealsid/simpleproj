@@ -1,0 +1,64 @@
+Estimated Emacs Memory Usage
+
+   116 MiB  Overall Object Memory Usage
+    97 MiB  Reserved (But Unused) Object Memory
+    71 MiB  Memory Used By Global Variables
+     6 MiB  Total Buffer Memory Usage
+   5.2 MiB  Memory Used By Symbol Plists
+       0 B  Total Image Cache Size
+
+Object Storage
+
+    82 MiB  Strings
+    18 MiB  Vectors
+    15 MiB  Conses
+   1.3 MiB  Symbols
+   220 KiB  Intervals
+    34 KiB  Buffer-Objects
+   1.7 KiB  Floats
+
+Largest Buffers
+
+   2.8 MiB  *ert*
+   1.2 MiB  *Help*
+   932 KiB   *DOC*
+   235 KiB  json.c
+   135 KiB  chip.c
+   124 KiB  thread.c
+    67 KiB  parallel-json-parsing.el
+    50 KiB  *Buffer List*
+    44 KiB  *Backtrace*
+    43 KiB  build
+    42 KiB  shell
+    40 KiB  trie.el
+    36 KiB  .saves-*
+    32 KiB  trie-test.el
+    29 KiB  simpleproj.el
+    25 KiB  magit-diff: simpleprojelisp
+    23 KiB  magit: simpleprojelisp
+    22 KiB  simpleprojelisp
+    20 KiB  *GNU Emacs*
+    19 KiB  *scratch*
+
+Largest Variables
+
+    23 MiB  simpleproj-projects
+    23 MiB  linux-trie
+    15 MiB  return-results
+     6 MiB  package-archive-contents
+   703 KiB  load-history
+   350 KiB  ido-dir-file-cache
+   316 KiB  package--compatibility-table
+   236 KiB  obarray
+   227 KiB  help-definition-prefixes
+   171 KiB  easy-menu-converted-items-table
+   158 KiB  face--new-frame-defaults
+   115 KiB  shortdoc--groups
+    94 KiB  global-map
+    86 KiB  package--builtins
+    80 KiB  coding-system-alist
+    71 KiB  input-method-alist
+    64 KiB  color-name-rgb-alist
+    60 KiB  language-info-alist
+    48 KiB  comp-subr-arities-h
+    42 KiB  key-translation-map
