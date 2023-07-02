@@ -109,7 +109,7 @@ change the working directory while the compiler is being invoked."
         (t (error "Invalid extension %s" extension))))
 
 (defmacro replace-multiple-regexps (regexps-and-replacements input-string)
-  "Macro to, given multiple regular expressions, combine them into one as a set of OR clauses and generate a call to replace-regexp-in-string.  Meant for readability to avoid long regexps to replace multiple regexps in one call to replace-regexp-in-string."
+  "Macro which takes a set of regular expressions and replacements and generates a loop over the set to call replace-regexp-in-string.  This makes it easier to read as you can avoid repeatedly setting a temp variable to the result of replace-regexp-in-string in order to pass it to the next call to replace-regexp-in-string. The form of regexps-and-replacements is a list of cons cells, where each cons cell is of the form (regexp . replacement)"
   ;; I'm not sure if this should be a macro, after writing it, there
   ;; does not appear to be a need for expansion at compile time and it
   ;; requires the caller to specify evaluation through backticks and
@@ -131,7 +131,7 @@ change the working directory while the compiler is being invoked."
          (remove-filename-regexp (concat " [^ ]*" compilation-file-filename "\\( \\|$\\)")))
     (replace-multiple-regexps `(("$"                     . ,language-and-stdin-option)
                                 (" -o +[^ ]+\\( \\|$\\)" . " ")
-                                (,remove-filename-regexp   . " "))
+                                (,remove-filename-regexp . " "))
                               command-line)))
 
 (defun remove-unnecessary-command-line-options-for-flymake (command-line)
