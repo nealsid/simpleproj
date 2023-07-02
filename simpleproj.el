@@ -103,15 +103,29 @@ change the working directory while the compiler is being invoked."
 (defun simpleproj-compilation-command-json-exists-p (sproj-project)
   (file-exists-p (concat (simple-project-build-root sproj-project) "/compile_commands.json")))
 
+(defun gcc-language-option-for-extension (extension)
+  (cond ((string-equal-ignore-case extension "c") "c")
+        ((member extension '("cc" "cpp" "cxx")) "c++")
+        (t (error "Invalid extension %s" extension))))
+
+(defun transform-build-command-line-into-flymake-command-line (command-line compilation-file-full-path)
+  "Flymake expects a compiler command that reads from STDIN, which is not what we read from compile_commands.json. This function will remove options specifying a file on the command line, while also adding something like \"-x <lang> -\".  It is GCC specific and will need some more work to be generalized."
+  (let ((compilation-file-filename (file-name-nondirectory compilation-file-full-path))
+        (gcc-language-option (gcc-language-option-for-extension (downcase (file-name-extension compilation-file-full-path)))))
+    (replace-regexp-in-string "$" (string-join (list "-x" gcc-language-option "-") " ")
+                              (replace-regexp-in-string " -o +[^ ]+\\( \\|$\\)" " "
+                                                        (replace-regexp-in-string (concat " [^ ]*" compilation-file-filename "\\( \\|$\\)") "" command-line)))))
+
 (defun remove-unnecessary-command-line-options-for-flymake (command-line)
   (replace-regexp-in-string " \\(\\(-f[^ ]+\\)\\|\\(-g[^ ]*\\)\\|\\(-pg\\)\\|\\(-m[^ ]+\\)\\)" "" command-line))
 
 (defun simpleproj-build-compilation-command-trie (json)
   (let ((filename-trie nil))
     (mapc (lambda (x)
-            (let ((file-full-path (gethash "file" x))
-                  (file-compilation-command (remove-unnecessary-command-line-options-for-flymake (gethash "command" x)))
-                  (file-compilation-wd (gethash "directory" x)))
+            (let* ((file-full-path (gethash "file" x))
+                   (file-compilation-command
+                    (remove-unnecessary-command-line-options-for-flymake (gethash "command" x) file-full-path))
+                   (file-compilation-wd (gethash "directory" x)))
               (setq filename-trie (add-string-to-trie filename-trie
                                                       file-full-path
                                                       (list file-compilation-wd
