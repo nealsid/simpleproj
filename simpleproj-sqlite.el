@@ -12,10 +12,13 @@
       (sqlite-close db))))
 
 (defun parse-json-into-sqlite-table (sproj)
-  (let* ((sproj-sqlite-db-filename (concat (simple-project-build-root sproj) "/sproj-compilation-commands.sqlite3"))
+  (let* ((gc-cons-threshold 10000000000)
+         (sproj-sqlite-db-filename (concat (simple-project-build-root sproj) "/sproj-compilation-commands.sqlite3"))
          (json-load-sql (format "insert into compilation_commands (file_name, compile_command, working_directory) \
                                                         values (?, ?, ?)"))
-         (db (sqlite-open sproj-sqlite-db-filename)))
+         (db (sqlite-open sproj-sqlite-db-filename))
+         (json (make-compile-commands-json (concat (simple-project-build-root sproj) "/compile_commands.json"))))
+    (sqlite-transaction db)
     (mapc (lambda (x)
             (let* ((file-full-path (gethash "file" x))
                    (file-compilation-command
@@ -32,5 +35,8 @@
                  (let ((sqlite-error-message (cadr raised-error)))
                    (cond ((string-equal "UNIQUE constraint failed: compilation_commands.file_name"
                                         sqlite-error-message) nil)
-                          (t (signal (car raised-error) (cdr raised-error)))))))))
-          (make-compile-commands-json (concat (simple-project-build-root sproj) "/compile_commands.json")))))
+                         (t (progn
+                              (sqlite-commit db)
+                              (signal (car raised-error) (cdr raised-error))))))))))
+          json)
+    (sqlite-commit db)))
