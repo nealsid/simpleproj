@@ -12,17 +12,25 @@
       (sqlite-close db))))
 
 (defun parse-json-into-sqlite-table (sproj)
-  ;; Sqlite does not expose READFILE through the API, only through the
-  ;; command shell (or extensions, which are not present in the Emacs
-  ;; built-in SQLITE api wrapper), and loading the JSON is much
-  ;; simpler this way, so for this particular step, we shell out to
-  ;; the command line shell.
-  (let ((sproj-sqlite-db-filename (concat (simple-project-build-root sproj) "/sproj-compilation-commands.sqlite3"))
-        (json-load-sql (format "insert into compilation_commands (file_name, compile_command, working_directory)\
-                                select json_extract(value, '$.file'),
-                                       json_extract (value, '$.command'),\
-                                       json_extract(value, '$.directory') \
-                                  from json_each(readfile('%s'))"
-                               (concat (simple-project-build-root sproj) "/compile_commands.json"))))
-    (start-process "sqlite" (get-buffer "sqlite-process") "sqlite3" sproj-sqlite-db-filename
-                   "-cmd" json-load-sql)))
+  (let* ((sproj-sqlite-db-filename (concat (simple-project-build-root sproj) "/sproj-compilation-commands.sqlite3"))
+         (json-load-sql (format "insert into compilation_commands (file_name, compile_command, working_directory) \
+                                                        values (?, ?, ?)"))
+         (db (sqlite-open sproj-sqlite-db-filename)))
+    (mapc (lambda (x)
+            (let* ((file-full-path (gethash "file" x))
+                   (file-compilation-command
+                    (transform-build-command-line-into-flymake-command-line
+                     (remove-unnecessary-command-line-options-for-flymake (gethash "command" x)) file-full-path))
+                   (file-compilation-wd (gethash "directory" x)))
+
+              ;; Sometimes compile_commands.json files will have
+              ;; duplicate entries for the same file, so ignore that
+              ;; case by catching the error and continuing.
+              (condition-case raised-error
+                  (sqlite-execute db json-load-sql (list file-full-path file-compilation-command file-compilation-wd))
+                (sqlite-error
+                 (let ((sqlite-error-message (cadr raised-error)))
+                   (cond ((string-equal "UNIQUE constraint failed: compilation_commands.file_name"
+                                        sqlite-error-message) nil)
+                          (t (signal (car raised-error) (cdr raised-error)))))))))
+          (make-compile-commands-json (concat (simple-project-build-root sproj) "/compile_commands.json")))))
