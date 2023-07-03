@@ -16,6 +16,7 @@
   (source-root nil :documentation "Source root for the project")
   (build-root nil :documentation "Build root for the project")
   (compile-commands-command nil :documentation "Command to generate compile_commands.json file")
+  (-db nil :documentation "(not meant for use) Variable containing reference to db")
   (filename-to-compile-command-trie nil :documentation "Trie of filename to compilation command"))
 
 (defun simpleproj-find-matching-project-for-buffer ()
@@ -94,12 +95,6 @@ change the working directory while the compiler is being invoked."
                                     :build-root build-root
                                     :compile-commands-command compile-commands-command)))
 
-(add-simple-project :project-name "Linux kernel"
-                    :project-short-name "Kernel"
-                    :source-root "/home/nealsid/git/linux"
-                    :build-root "/home/nealsid/git/linux"
-                    :compile-commands-command "make compile_commands.json")
-
 (defun simpleproj-compilation-command-json-exists-p (sproj-project)
   (file-exists-p (concat (simple-project-build-root sproj-project) "/compile_commands.json")))
 
@@ -171,14 +166,10 @@ change the working directory while the compiler is being invoked."
          (full-compile-command (concat "cd " (simple-project-build-root project) " && " compiler-command)))
     (compile full-compile-command)))
 
-(defun file-to-string (file)
-  "File to string function"
-  (with-temp-buffer
-    (insert-file-contents-literally file)
-    (buffer-substring-no-properties (point-min) (point-max))))
-
-(defun make-compile-commands-json (pathname)
-  (json-parse-string (file-to-string pathname)))
-
 (setq simpleproj-projects '())
 (define-error 'compilation-commands-missing "No compilation commands json file in build root")
+(add-simple-project :project-name "Linux kernel"
+                    :project-short-name "Kernel"
+                    :source-root "/home/nealsid/git/linux"
+                    :build-root "/home/nealsid/git/linux"
+                    :compile-commands-command "make compile_commands.json")

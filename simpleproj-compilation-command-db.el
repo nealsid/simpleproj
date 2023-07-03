@@ -1,5 +1,18 @@
 (require 'sqlite)
 
+(defun simpleproj-db-for-project (sproj)
+  (cond ((not (eq nil (simple-project--db sproj)))
+         (simple-project--db sproj))
+        (
+  )
+
+(defun simpleproj-database-exists-and-recent (sproj)
+  (let ((sproj-sqlite-db-filename (concat (simple-project-build-root sproj) "/sproj-compilation-commands.sqlite3")))
+    (cond ((not (file-exists-p sproj-sqlite-db-filename))
+           nil)
+          (file-newer-than-file-p sproj-sqlite-db-filename
+                                  (concat (simple-project-build-root sproj) "/compile_commands.json")))))
+
 (defun create-database-for-simple-project (sproj)
   (let ((sproj-sqlite-db-filename (concat (simple-project-build-root sproj) "/sproj-compilation-commands.sqlite3")))
     ;; (when (file-exists-p sproj-sqlite-db-filename)
@@ -7,7 +20,7 @@
 
     (let* ((db (sqlite-open sproj-sqlite-db-filename))
            (compile-commands-json-path (concat (simple-project-build-root sproj) "/compile_commands.json"))
-           (table-create-dml "CREATE TABLE compilation_commands (file_name text not null primary key, compile_command text, working_directory text)"))
+           (table-create-dml "CREATE TABLE compilation_commands (file_name text not null primary key, compile_command text, working_directory text, manual_override integer)"))
       (sqlite-execute db table-create-dml)
       (sqlite-close db))))
 
