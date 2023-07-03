@@ -58,7 +58,7 @@ change the working directory while the compiler is being invoked."
     ;; TODO: this needs to be buffer-specific, as flymake-cc is not
     ;; read in a buffer-local fashion.
     (setq flymake-cc-command
-          (split-string (simpleproj-get-compilation-command-for-buffer sproj)))
+          'simpleproj-get-compilation-command-for-flymake)
     (flymake-mode)
     ;; It would be better to specify that the advice is buffer-local
     ;; so that we only advise flymake-cc in buffers that are part of a
@@ -142,7 +142,8 @@ change the working directory while the compiler is being invoked."
     (mapc (lambda (x)
             (let* ((file-full-path (gethash "file" x))
                    (file-compilation-command
-                    (remove-unnecessary-command-line-options-for-flymake (gethash "command" x) file-full-path))
+                    (transform-build-command-line-into-flymake-command-line
+                     (remove-unnecessary-command-line-options-for-flymake (gethash "command" x)) file-full-path))
                    (file-compilation-wd (gethash "directory" x)))
               (setq filename-trie (add-string-to-trie filename-trie
                                                       file-full-path
@@ -155,6 +156,9 @@ change the working directory while the compiler is being invoked."
 (defun simpleproj-get-compilation-command-wd-for-buffer (sproj-project)
   (nth 0 (lookup-string (simple-project-filename-to-compile-command-trie sproj-project)
                         (buffer-file-name))))
+
+(defun simpleproj-get-compilation-command-for-flymake ()
+  (split-string (simpleproj-get-compilation-command-for-buffer (simpleproj-find-matching-project-for-buffer)) " "))
 
 (defun simpleproj-get-compilation-command-for-buffer (sproj-project)
   (nth 1 (lookup-string (simple-project-filename-to-compile-command-trie sproj-project)
