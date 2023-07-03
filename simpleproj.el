@@ -127,7 +127,7 @@ change the working directory while the compiler is being invoked."
   "Flymake expects a compiler command that reads from STDIN, which is not what we read from compile_commands.json. This function will remove options specifying a file on the command line, while also adding something like \"-x <lang> -\".  It is GCC specific and will need some more work to be generalized."
   (let* ((compilation-file-filename (file-name-nondirectory compilation-file-full-path))
          (gcc-language-option (gcc-language-option-for-extension (downcase (file-name-extension compilation-file-full-path))))
-         (language-and-stdin-option (string-join (list " -x" gcc-language-option "-") " "))
+         (language-and-stdin-option (string-join (list " -x" gcc-language-option "-fsyntax-only" "-") " "))
          (remove-filename-regexp (concat " [^ ]*" compilation-file-filename "\\( \\|$\\)")))
     (replace-multiple-regexps `(("$"                     . ,language-and-stdin-option)
                                 (" -o +[^ ]+\\( \\|$\\)" . " ")

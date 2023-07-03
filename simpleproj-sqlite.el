@@ -37,6 +37,8 @@
                                         sqlite-error-message) nil)
                          (t (progn
                               (sqlite-commit db)
+                              (sqlite-close db)
                               (signal (car raised-error) (cdr raised-error))))))))))
           json)
-    (sqlite-commit db)))
+    (sqlite-commit db)
+    (sqlite-close db)))
