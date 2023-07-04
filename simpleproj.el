@@ -1,8 +1,16 @@
-;; Some Emacs helper functions to interact with projects.
+;;; simpleproject --- A project to make some project related tasks easier (for me)
+;;;
+;;; Commentary:
+;;;
+;;; SimpleProj tries to tie together a compilation command
+;;; database with flymake, as well as some tags- and file- related
+;;; management tasks.
+
+;;; Code:
 
 (require 'flymake)
 
-(define-minor-mode simpleproj-minor-mode "Simple Project Minor Mode" :lighter " Sproj")
+(define-minor-mode simpleproj-minor-mode "Simple Project Minor Mode." :lighter " Sproj")
 (add-hook 'find-file-hook 'simpleproj-find-file-hook)
 ;; Specify a depth of 10 so that simpleproj-configure-flymake happens
 ;; after simpleproj-build-compilation-trie-hook.
@@ -10,7 +18,7 @@
 (add-hook 'simpleproj-minor-mode-hook 'simpleproj-configure-flymake 10)
 
 (cl-defstruct simple-project
-  "SimpleProj Project Structure"
+  "SimpleProj Project Structure."
   (project-name nil :documentation "Project name")
   (project-short-name nil :documentation "Abbreviated project name")
   (source-root nil :documentation "Source root for the project")
@@ -19,41 +27,30 @@
   (-db nil :documentation "(not meant for use) Variable containing reference to db")
   (filename-to-compile-command-trie nil :documentation "Trie of filename to compilation command"))
 
-(defun simpleproj-find-matching-project-for-buffer ()
-  "Returns the matching project for the current buffer or NIL if none found."
-  (let* ((filename (buffer-file-name))
-         (matching-projects (seq-filter (lambda (project)
-                                          (if (string-prefix-p (simple-project-source-root project) filename t)
-                                              project
-                                            nil))
-                                        simpleproj-projects)))
-    (cond ((= (length matching-projects) 1)
-           (nth 0 matching-projects))
-          ((> (length matching-projects) 1)
-           (error "More than 1 project matching %s found." filename))
-          nil)))
-
 (defun simpleproj-find-file-hook ()
   "Hook to determine if the file being opened is contained within a
-SimpleProj project entry, and, if, so, turn on simpleproj-minor-mode."
+SimpleProj project entry, and, if so, turn on `simpleproj-minor-mode'."
   (let* ((filename (buffer-file-name))
          (matching-projects (simpleproj-find-matching-project-for-buffer)))
     (cond (matching-projects
            (simpleproj-minor-mode)))))
 
 (defun simpleproj-flymake-cc-advice-change-wd (orig-function report-fn &rest args)
-  "Advice for flymake-cc to change the working directory to what is
-specified in compile_commands.json.  If the current buffer is not
-part of a simple project, just call the original function with no
-change in environment."
+  "Function meant to be used as advice for `flymake-cc'.  Change the
+working directory to what is specified in compile_commands.json
+before invoking `flymake-cc'.  If the current buffer is not part
+of a simple project, just call (ORIG-FUNCTION REPORT-FN ARGS)
+with no change in environment."
   (let* ((sproj (simpleproj-find-matching-project-for-buffer))
          (default-directory (cond (sproj (simpleproj-get-compilation-command-wd-for-buffer sproj))
                                   (t default-directory))))
     (funcall orig-function report-fn args)))
 
+(defvar flymake-cc-command) ;; to avoid warnings
+
 (defun simpleproj-configure-flymake ()
-  "Function meant to be called as a hook when simpleproj-minor-mode
-is enabled.  Turns on flymake and advises flymake-cc in order to
+  "Function meant to be called as a hook when `simpleproj-minor-mode'
+is enabled.  Turns on flymake and advises `flymake-cc' in order to
 change the working directory while the compiler is being invoked."
   (let ((sproj (simpleproj-find-matching-project-for-buffer)))
     ;; TODO: this needs to be buffer-specific, as flymake-cc is not
@@ -173,3 +170,17 @@ change the working directory while the compiler is being invoked."
                     :source-root "/home/nealsid/git/linux"
                     :build-root "/home/nealsid/git/linux"
                     :compile-commands-command "make compile_commands.json")
+
+(defun simpleproj-find-matching-project-for-buffer ()
+  "Returns the matching project for the current buffer or NIL if none found."
+  (let* ((filename (buffer-file-name))
+         (matching-projects (seq-filter (lambda (project)
+                                          (if (string-prefix-p (simple-project-source-root project) filename t)
+                                              project
+                                            nil))
+                                        simpleproj-projects)))
+    (cond ((= (length matching-projects) 1)
+           (nth 0 matching-projects))
+          ((> (length matching-projects) 1)
+           (error "More than 1 project matching %s found." filename))
+          nil)))
