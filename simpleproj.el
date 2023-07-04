@@ -11,11 +11,7 @@
 (require 'flymake)
 
 (define-minor-mode simpleproj-minor-mode "Simple Project Minor Mode." :lighter " Sproj")
-(add-hook 'find-file-hook 'simpleproj-find-file-hook)
-;; Specify a depth of 10 so that simpleproj-configure-flymake happens
-;; after simpleproj-build-compilation-trie-hook.
-(add-hook 'simpleproj-minor-mode-hook 'simpleproj-build-compilation-trie-hook 10)
-(add-hook 'simpleproj-minor-mode-hook 'simpleproj-configure-flymake 10)
+(add-hook 'find-file-hook 'simpleproj-turn-on-simpleproj-if-project-contains-visited-file)
 
 (cl-defstruct simple-project
   "SimpleProj Project Structure."
@@ -27,7 +23,7 @@
   (-db nil :documentation "(not meant for use) Variable containing reference to db")
   (filename-to-compile-command-trie nil :documentation "Trie of filename to compilation command"))
 
-(defun simpleproj-find-file-hook ()
+(defun simpleproj-turn-on-simpleproj-if-project-contains-visited-file ()
   "Hook to determine if the file being opened is contained within a
 SimpleProj project entry, and, if so, turn on `simpleproj-minor-mode'."
   (let* ((filename (buffer-file-name))
@@ -35,16 +31,10 @@ SimpleProj project entry, and, if so, turn on `simpleproj-minor-mode'."
     (cond (matching-projects
            (simpleproj-minor-mode)))))
 
-(defun simpleproj-flymake-cc-advice-change-wd (orig-function report-fn &rest args)
-  "Function meant to be used as advice for `flymake-cc'.  Change the
-working directory to what is specified in compile_commands.json
-before invoking `flymake-cc'.  If the current buffer is not part
-of a simple project, just call (ORIG-FUNCTION REPORT-FN ARGS)
-with no change in environment."
-  (let* ((sproj (simpleproj-find-matching-project-for-buffer))
-         (default-directory (cond (sproj (simpleproj-get-compilation-command-wd-for-buffer sproj))
-                                  (t default-directory))))
-    (funcall orig-function report-fn args)))
+;; Specify a depth of 10 so that simpleproj-configure-flymake happens
+;; after simpleproj-build-compilation-trie-hook.
+(add-hook 'simpleproj-minor-mode-hook 'simpleproj-build-compilation-trie-hook 10)
+(add-hook 'simpleproj-minor-mode-hook 'simpleproj-configure-flymake 10)
 
 (defvar flymake-cc-command) ;; to avoid warnings
 
@@ -184,3 +174,14 @@ change the working directory while the compiler is being invoked."
           ((> (length matching-projects) 1)
            (error "More than 1 project matching %s found." filename))
           nil)))
+
+(defun simpleproj-flymake-cc-advice-change-wd (orig-function report-fn &rest args)
+  "Function meant to be used as advice for `flymake-cc'.  Change the
+working directory to what is specified in compile_commands.json
+before invoking `flymake-cc'.  If the current buffer is not part
+of a simple project, just call (ORIG-FUNCTION REPORT-FN ARGS)
+with no change in environment."
+  (let* ((sproj (simpleproj-find-matching-project-for-buffer))
+         (default-directory (cond (sproj (simpleproj-get-compilation-command-wd-for-buffer sproj))
+                                  (t default-directory))))
+    (funcall orig-function report-fn args)))
