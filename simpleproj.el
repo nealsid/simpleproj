@@ -33,10 +33,21 @@ SimpleProj project entry, and, if so, turn on `simpleproj-minor-mode'."
 
 ;; Specify a depth of 10 so that simpleproj-configure-flymake happens
 ;; after simpleproj-build-compilation-trie-hook.
+(add-hook 'simpleproj-minor-mode-hook 'simpleproj-run-simpleproj-task-list 10)
 (add-hook 'simpleproj-minor-mode-hook 'simpleproj-build-compilation-trie-hook 10)
 (add-hook 'simpleproj-minor-mode-hook 'simpleproj-configure-flymake 10)
 
 (defvar flymake-cc-command) ;; to avoid warnings
+
+(setq simple-proj-buffer-visited-task-list
+      (make-sp-task-list :tasks '(simpleproj-configure-flymake
+(defun simpleproj-run-simpleproj-task-list ()
+  "Function meant to be called as a hook when `simpleproj-minor-mode'
+is enabled.  Runs the simpleproj task list, which ensures the
+compilation commands database is valid/up to date, and configures
+flymake."
+
+)
 
 (defun simpleproj-configure-flymake ()
   "Function meant to be called as a hook when `simpleproj-minor-mode'

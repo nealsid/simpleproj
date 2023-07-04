@@ -12,6 +12,9 @@
   (:tasks '() :documentation "List of functions to execute"))
 
 (defun sp-execute-task-list (task-list &optional start-num)
+  (preconditions
+   `((sp-task-list-p task-list) ("Task list wrong type: %s" (type-of task-list))))
+
   (cl-loop for task-num from 0 to (length task-list)
            for res = (funcall (nth task-num task-list))
            when (not (equal t res)) return task-num))
