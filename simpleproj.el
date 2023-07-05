@@ -39,14 +39,14 @@ SimpleProj project entry, and, if so, turn on `simpleproj-minor-mode'."
 
 (defvar flymake-cc-command) ;; to avoid warnings
 
-(setq simple-proj-buffer-visited-task-list
-      (make-sp-task-list :tasks '(simpleproj-configure-flymake
+;; (setq simple-proj-buffer-visited-task-list
+;;       (make-sp-task-list :tasks '(simpleproj-configure-flymake))
+
 (defun simpleproj-run-simpleproj-task-list ()
   "Function meant to be called as a hook when `simpleproj-minor-mode'
 is enabled.  Runs the simpleproj task list, which ensures the
 compilation commands database is valid/up to date, and configures
 flymake."
-
 )
 
 (defun simpleproj-configure-flymake ()
