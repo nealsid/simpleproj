@@ -48,6 +48,7 @@
               ;; Sometimes compile_commands.json files will have
               ;; duplicate entries for the same file, so ignore that
               ;; case by catching the error and continuing.
+              ;; TODO use "insert into or ignore" or "insert where not exists"
               (condition-case raised-error
                   (sqlite-execute db json-load-sql (list file-full-path file-compilation-command file-compilation-wd))
                 (sqlite-error
