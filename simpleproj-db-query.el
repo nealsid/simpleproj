@@ -10,3 +10,8 @@
            (parse-json-into-sqlite-table sproj))
           (t (simpleproj-initialize-sqlite-for-project sproj)))
     (run-hooks 'simpleproj--db-ready-hook)))
+
+(defun simpleproj-query-command-line-for-file (sproj file-name)
+  (let ((db (simple-project--db db)))
+    (cl-assert db)
+    (sqlite-query "select compile_command
