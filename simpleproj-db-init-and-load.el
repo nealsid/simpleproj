@@ -1,4 +1,11 @@
 ;; Functions for initializing and loading a project database.
+(defun simpleproj-open-db-for-project (sproj)
+  (cond ((simpleproj-database-should-be-created sproj)
+         (simpleproj-create-database-and-initialize-sqlite sproj)
+         (parse-json-into-sqlite-table sproj))
+        (t (simpleproj-initialize-sqlite-for-project sproj)))
+  (run-hooks 'simpleproj--db-ready-hook))
+
 (defun simpleproj-initialize-sqlite-for-project (sproj)
   (let ((sproj-sqlite-db-filename (concat (simple-project-build-root sproj) "/sproj-compilation-commands.sqlite3")))
     (cl-assert (file-exists-p sproj-sqlite-db-filename))
@@ -88,3 +95,6 @@
                                 (" -o +[^ ]+\\( \\|$\\)" . " ")
                                 (,remove-filename-regexp . " "))
                               command-line)))
+
+(defun simpleproj-compilation-command-json-exists-p (sproj-project)
+  (file-exists-p (concat (simple-project-build-root sproj-project) "/compile_commands.json")))

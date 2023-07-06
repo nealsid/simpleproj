@@ -3,15 +3,10 @@
 (defvar simpleproj--db-ready-hook nil
   "Hook run after the database for the current project is initialized")
 
-(defun simpleproj-open-db-for-project (&optional sproj)
-  (let ((sproj (or sproj (simpleproj-find-matching-project-for-buffer))))
-    (cond ((simpleproj-database-should-be-created sproj)
-           (simpleproj-create-database-and-initialize-sqlite sproj)
-           (parse-json-into-sqlite-table sproj))
-          (t (simpleproj-initialize-sqlite-for-project sproj)))
-    (run-hooks 'simpleproj--db-ready-hook)))
-
-(defun simpleproj-query-command-line-for-file (sproj file-name)
-  (let ((db (simple-project--db db)))
+(defun simpleproj-query-for-file-flymake-settings (sproj file-name)
+  (let ((db (simple-project--db sproj)))
     (cl-assert db)
-    (sqlite-query "select compile_command
+    (let ((query-result (sqlite-select db "select working_directory, compile_command from compilation_commands where file_name = ?" (list file-name))))
+      (cl-assert (length= query-result 1))
+      (cl-assert (length= (nth 0 query-result) 2))
+      (nth 0 query-result))))

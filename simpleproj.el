@@ -31,34 +31,42 @@
 SimpleProj project entry, and, if so, turn on `simpleproj-minor-mode'."
   (let* ((matching-project (simpleproj-find-matching-project-for-buffer)))
     (cond (matching-project
+           (set-variable 'simpleproj-project matching-project)
            (simpleproj-minor-mode)))))
 
 (define-minor-mode simpleproj-minor-mode "Simple Project Minor Mode." :lighter " Sproj"
-  (set-variable 'simpleproj-project (simpleproj-find-matching-project-for-buffer))
-  (simpleproj-open-db-for-project))
+  ;; Mode initialization forms that are run before any hooks.
+  (simpleproj-open-db-for-project simpleproj-project))
 
 (add-hook 'simpleproj--db-ready-hook 'simpleproj-configure-flymake)
 
 (defvar flymake-cc-command) ;; to avoid warnings
 
 (defun simpleproj-configure-flymake ()
-  "Function meant to be called as a hook function when `simpleproj-minor-mode'
-is enabled.  Turns on flymake and advises `flymake-cc' in order to
-change the working directory while the compiler is being invoked."
-  (let ((sproj (simpleproj-find-matching-project-for-buffer)))
-    ;; TODO: this needs to be buffer-specific, as flymake-cc is not
-    ;; read in a buffer-local fashion.
-    (setq flymake-cc-command
-          'simpleproj-get-compilation-command-for-flymake)
-    (flymake-mode)
-    ;; It would be better to specify that the advice is buffer-local
-    ;; so that we only advise flymake-cc in buffers that are part of a
-    ;; simple project, but buffer-local advice only works for
-    ;; functions that are called by storing the function symbol in a
-    ;; variable and advising the variable (AFAICT), so we just have to
-    ;; advise it globally and do nothing in the case when the buffer
-    ;; is not related to a simple project.
-    (advice-add 'flymake-cc :around #'simpleproj-flymake-cc-advice-change-wd)))
+  "Function meant to be called during `simpleproj-minor-mode'
+initialization.  Turns on flymake and advises `flymake-cc' in
+order to change the working directory while the compiler is being
+invoked."
+  ;; There should probably be some sanity check in case this
+  ;; variable is overwritten by something unrelated to SimpleProj.
+  (setq flymake-cc-command
+        'simpleproj-get-compilation-command-for-flymake)
+  (let ((flymake-settings-for-file
+         (simpleproj-query-for-file-flymake-settings
+          simpleproj-project
+          (buffer-file-name))))
+    (setq simpleproj-flymake-working-directory (nth 0 flymake-settings-for-file))
+    (setq simpleproj-flymake-command-line (split-string (nth 1 flymake-settings-for-file))))
+
+  (flymake-mode)
+  ;; It would be better to specify that the advice is buffer-local
+  ;; so that we only advise flymake-cc in buffers that are part of a
+  ;; simple project, but buffer-local advice only works for
+  ;; functions that are called by storing the function symbol in a
+  ;; variable and advising the variable (AFAICT), so we just have to
+  ;; advise it globally and do nothing in the case when the buffer
+  ;; is not related to a simple project.
+  (advice-add 'flymake-cc :around #'simpleproj-flymake-cc-advice-change-wd))
 
 (cl-defun add-simple-project (&key project-name
                                    project-short-name
@@ -72,29 +80,13 @@ change the working directory while the compiler is being invoked."
                                     :build-root build-root
                                     :compile-commands-command compile-commands-command)))
 
-(defun simpleproj-compilation-command-json-exists-p (sproj-project)
-  (file-exists-p (concat (simple-project-build-root sproj-project) "/compile_commands.json")))
-
-(defun simpleproj-get-compilation-command-wd-for-buffer (sproj-project)
-  (nth 0 (lookup-string (simple-project-filename-to-compile-command-trie sproj-project)
-                        (buffer-file-name))))
-
 (defun simpleproj-get-compilation-command-for-flymake ()
-  (split-string (simpleproj-get-compilation-command-for-buffer (simpleproj-find-matching-project-for-buffer)) " "))
-
-(defun simpleproj-get-compilation-command-for-buffer (sproj-project)
-  (nth 1 (lookup-string (simple-project-filename-to-compile-command-trie sproj-project)
-                        (buffer-file-name))))
-
-(defun compile-using-project-compilation-command ()
-  (interactive)
-  (let* ((project (simpleproj-find-matching-project-for-buffer))
-         (compiler-command (simpleproj-get-compilation-command-for-buffer project))
-         (full-compile-command (concat "cd " (simple-project-build-root project) " && " compiler-command)))
-    (compile full-compile-command)))
+  simpleproj-flymake-command-line)
 
 (setq simpleproj-projects '())
+
 (define-error 'compilation-commands-missing "No compilation commands json file in build root")
+
 (add-simple-project :project-name "Linux kernel"
                     :project-short-name "Kernel"
                     :source-root "/home/nealsid/git/linux"
@@ -121,7 +113,6 @@ working directory to what is specified in compile_commands.json
 before invoking `flymake-cc'.  If the current buffer is not part
 of a simple project, just call (ORIG-FUNCTION REPORT-FN ARGS)
 with no change in environment."
-  (let* ((sproj (simpleproj-find-matching-project-for-buffer))
-         (default-directory (cond (sproj (simpleproj-get-compilation-command-wd-for-buffer sproj))
-                                  (t default-directory))))
+  (let ((default-directory (or simpleproj-flymake-working-directory
+                              default-directory)))
     (funcall orig-function report-fn args)))
