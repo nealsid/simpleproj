@@ -10,12 +10,11 @@
 
 (require 'flymake)
 
-(define-minor-mode simpleproj-minor-mode "Simple Project Minor Mode." :lighter " Sproj")
-(add-hook 'find-file-hook 'simpleproj-turn-on-simpleproj-if-project-contains-visited-file)
-
 (defvar-local simpleproj-project nil "Buffer-local variable referring to the simple project structure for this buffer")
 (defvar-local simpleproj-flymake-command-line nil "Buffer-local variable referring to the Flymake command line for this buffer")
 (defvar-local simpleproj-flymake-working-directory nil "Buffer-local variable referring to the Flymake command working directory for this buffer")
+
+(add-hook 'find-file-hook 'simpleproj-turn-on-simpleproj-if-project-contains-visited-file)
 
 (cl-defstruct simple-project
   "SimpleProj Project Structure."
@@ -25,24 +24,25 @@
   (build-root nil :documentation "Build root for the project")
   (compile-commands-command nil :documentation "Command to generate compile_commands.json file")
   (-db nil :documentation "(private) Variable containing reference to db")
-  (-visited-buffers nil :documentation "(private) Variable containing list of buffers that are visiting files in this project")
+  (-visited-buffers nil :documentation "(private) Variable containing list of buffers that are visiting files in this project"))
 
 (defun simpleproj-turn-on-simpleproj-if-project-contains-visited-file ()
-  "Hook to determine if the file being opened is contained within a
+  "find-file-hook function to determine if the file being opened is contained within a
 SimpleProj project entry, and, if so, turn on `simpleproj-minor-mode'."
-  (let* ((filename (buffer-file-name))
-         (matching-project (simpleproj-find-matching-project-for-buffer)))
+  (let* ((matching-project (simpleproj-find-matching-project-for-buffer)))
     (cond (matching-project
-           (simpleproj-minor-mode)
-           (set-variable 'simpleproj-project matching-project)))))
+           (simpleproj-minor-mode)))))
 
-(add-hook 'simpleproj-minor-mode-hook 'simpleproj-open-db-for-project 10)
+(define-minor-mode simpleproj-minor-mode "Simple Project Minor Mode." :lighter " Sproj"
+  (set-variable 'simpleproj-project (simpleproj-find-matching-project-for-buffer))
+  (simpleproj-open-db-for-project))
+
 (add-hook 'simpleproj--db-ready-hook 'simpleproj-configure-flymake)
 
 (defvar flymake-cc-command) ;; to avoid warnings
 
 (defun simpleproj-configure-flymake ()
-  "Function meant to be called as a hook when `simpleproj-minor-mode'
+  "Function meant to be called as a hook function when `simpleproj-minor-mode'
 is enabled.  Turns on flymake and advises `flymake-cc' in order to
 change the working directory while the compiler is being invoked."
   (let ((sproj (simpleproj-find-matching-project-for-buffer)))
