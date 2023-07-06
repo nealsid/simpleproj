@@ -20,8 +20,7 @@
   (source-root nil :documentation "Source root for the project")
   (build-root nil :documentation "Build root for the project")
   (compile-commands-command nil :documentation "Command to generate compile_commands.json file")
-  (-db nil :documentation "(not meant for use) Variable containing reference to db")
-  (filename-to-compile-command-trie nil :documentation "Trie of filename to compilation command"))
+  (-db nil :documentation "(not meant for use) Variable containing reference to db"))
 
 (defun simpleproj-turn-on-simpleproj-if-project-contains-visited-file ()
   "Hook to determine if the file being opened is contained within a
@@ -31,23 +30,10 @@ SimpleProj project entry, and, if so, turn on `simpleproj-minor-mode'."
     (cond (matching-projects
            (simpleproj-minor-mode)))))
 
-;; Specify a depth of 10 so that simpleproj-configure-flymake happens
-;; after simpleproj-build-compilation-trie-hook.
-(add-hook 'simpleproj-minor-mode-hook 'simpleproj-run-simpleproj-task-list 10)
-(add-hook 'simpleproj-minor-mode-hook 'simpleproj-build-compilation-trie-hook 10)
-(add-hook 'simpleproj-minor-mode-hook 'simpleproj-configure-flymake 10)
+(add-hook 'simpleproj-minor-mode-hook 'simpleproj-open-db-for-project 10)
+(add-hook 'simpleproj--db-ready-hook 'simpleproj-configure-flymake)
 
 (defvar flymake-cc-command) ;; to avoid warnings
-
-;; (setq simple-proj-buffer-visited-task-list
-;;       (make-sp-task-list :tasks '(simpleproj-configure-flymake))
-
-(defun simpleproj-run-simpleproj-task-list ()
-  "Function meant to be called as a hook when `simpleproj-minor-mode'
-is enabled.  Runs the simpleproj task list, which ensures the
-compilation commands database is valid/up to date, and configures
-flymake."
-)
 
 (defun simpleproj-configure-flymake ()
   "Function meant to be called as a hook when `simpleproj-minor-mode'
@@ -68,19 +54,6 @@ change the working directory while the compiler is being invoked."
     ;; is not related to a simple project.
     (advice-add 'flymake-cc :around #'simpleproj-flymake-cc-advice-change-wd)))
 
-(defun simpleproj-build-compilation-trie-hook ()
-  (and simpleproj-minor-mode
-       (let ((sproj (simpleproj-find-matching-project-for-buffer))
-             (gc-cons-threshold 10000000000)) ; Abitrarily large
-                                              ; number to pause GC
-                                              ; while JSON parsing and
-                                              ; trie building are
-                                              ; happening.
-         (when (simpleproj-compilation-command-json-exists-p sproj)
-           (setf (simple-project-filename-to-compile-command-trie sproj)
-                 (simpleproj-build-compilation-command-trie
-                  (make-compile-commands-json (concat (simple-project-build-root sproj) "/compile_commands.json"))))))))
-
 (cl-defun add-simple-project (&key project-name
                                    project-short-name
                                    source-root
@@ -95,56 +68,6 @@ change the working directory while the compiler is being invoked."
 
 (defun simpleproj-compilation-command-json-exists-p (sproj-project)
   (file-exists-p (concat (simple-project-build-root sproj-project) "/compile_commands.json")))
-
-(defun gcc-language-option-for-extension (extension)
-  (cond ((string-equal-ignore-case extension "c") "c")
-        ((member extension '("cc" "cpp" "cxx")) "c++")
-        (t (error "Invalid extension %s" extension))))
-
-(defmacro replace-multiple-regexps (regexps-and-replacements input-string)
-  "Macro which takes a set of regular expressions and replacements and generates a loop over the set to call replace-regexp-in-string.  This makes it easier to read as you can avoid repeatedly setting a temp variable to the result of replace-regexp-in-string in order to pass it to the next call to replace-regexp-in-string. The form of regexps-and-replacements is a list of cons cells, where each cons cell is of the form (regexp . replacement)"
-  ;; I'm not sure if this should be a macro, after writing it, there
-  ;; does not appear to be a need for expansion at compile time and it
-  ;; requires the caller to specify evaluation through backticks and
-  ;; commas. TODO rewrite as a function.
-  `(let ((temp-string ,input-string))
-     (cl-loop for regexp-and-replacement
-              in ,regexps-and-replacements
-              do (let ((regexp (car regexp-and-replacement))
-                       (replacement (cdr regexp-and-replacement)))
-                   (setq temp-string (replace-regexp-in-string regexp replacement temp-string))
-                   temp-string)
-              finally return temp-string)))
-
-(defun transform-build-command-line-into-flymake-command-line (command-line compilation-file-full-path)
-  "Flymake expects a compiler command that reads from STDIN, which is not what we read from compile_commands.json. This function will remove options specifying a file on the command line, while also adding something like \"-x <lang> -\".  It is GCC specific and will need some more work to be generalized."
-  (let* ((compilation-file-filename (file-name-nondirectory compilation-file-full-path))
-         (gcc-language-option (gcc-language-option-for-extension (downcase (file-name-extension compilation-file-full-path))))
-         (language-and-stdin-option (string-join (list " -x" gcc-language-option "-fsyntax-only" "-") " "))
-         (remove-filename-regexp (concat " [^ ]*" compilation-file-filename "\\( \\|$\\)")))
-    (replace-multiple-regexps `(("$"                     . ,language-and-stdin-option)
-                                (" -o +[^ ]+\\( \\|$\\)" . " ")
-                                (,remove-filename-regexp . " "))
-                              command-line)))
-
-(defun remove-unnecessary-command-line-options-for-flymake (command-line)
-  (replace-regexp-in-string " \\(\\(-f[^ ]+\\)\\|\\(-g[^ ]*\\)\\|\\(-pg\\)\\|\\(-m[^ ]+\\)\\)" "" command-line))
-
-(defun simpleproj-build-compilation-command-trie (json)
-  (let ((filename-trie nil))
-    (mapc (lambda (x)
-            (let* ((file-full-path (gethash "file" x))
-                   (file-compilation-command
-                    (transform-build-command-line-into-flymake-command-line
-                     (remove-unnecessary-command-line-options-for-flymake (gethash "command" x)) file-full-path))
-                   (file-compilation-wd (gethash "directory" x)))
-              (setq filename-trie (add-string-to-trie filename-trie
-                                                      file-full-path
-                                                      (list file-compilation-wd
-                                                            file-compilation-command)
-                                                      0))))
-          json)
-    filename-trie))
 
 (defun simpleproj-get-compilation-command-wd-for-buffer (sproj-project)
   (nth 0 (lookup-string (simple-project-filename-to-compile-command-trie sproj-project)
