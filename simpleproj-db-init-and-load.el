@@ -49,7 +49,7 @@
   (let* ((file-full-path (gethash "file" json-entry))
          (file-compilation-command
           (transform-build-command-line-into-flymake-command-line
-           (gethash "command" json-entry)) file-full-path)
+           (gethash "command" json-entry) file-full-path))
          (file-compilation-wd (gethash "directory" json-entry)))
     ;; Sometimes compile_commands.json files will have
     ;; duplicate entries for the same file, so ignore that

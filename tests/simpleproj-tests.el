@@ -1,9 +1,11 @@
+(load-file "../simpleproj.el")
+(load-file "../simpleproj-db-init-and-load.el")
+(load-file "../simpleproj-db-query.el")
+(load-file "../simpleproj-cc-json-functions.el")
+(require 'gv)
+
 (ert-deftest open-one-file-project ()
   "Opens a project with one file"
-  (add-simple-project :project-name "Hello, World"
-                      :project-short-name "helloworld"
-                      :source-root default-directory
-                      :build-root default-directory)
   ;; generate json file
   (let* ((json-array (vector (make-hash-table)))
          (cmd-hash (aref json-array 0)))
@@ -14,4 +16,15 @@
         (find-file-noselect "compile_commands.json")
       (erase-buffer)
       (insert (json-serialize json-array))
-      (save-buffer))))
+      (save-buffer)))
+  (delete-file (concat default-directory "sproj-compilation-commands.sqlite3"))
+  (let ((simpleproj-projects (list (make-simple-project
+                              :project-name "Hello, World"
+                              :project-short-name "helloworld"
+                              :source-root (expand-file-name default-directory)
+                              :build-root (expand-file-name default-directory)))))
+    (with-current-buffer
+        (find-file-noselect "main.c")
+      (message "hello")
+      (message "%s" simpleproj-projects)
+      (should (eq simpleproj-minor-mode t)))))
