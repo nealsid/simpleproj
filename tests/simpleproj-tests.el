@@ -3,15 +3,29 @@
 (load-file "../simpleproj-db-query.el")
 (load-file "../simpleproj-cc-json-functions.el")
 (require 'gv)
+(require 'cl)
+
+(defun puthashm (&rest args)
+       "Wrapper around puthash to support storing multiple key/values in
+one call by the user. Arguments except last are key & value,
+repeated, and last argument is the hash table."
+       (cl-assert (cl-oddp (length args)))
+       (cl-assert (length> args 2))
+       (let ((ht (car (last args))))
+         (cl-assert (hash-table-p ht))
+         (cl-loop for (key value) on args by 'cddr
+                  for i from 0 to (length args) by 2
+                  do (puthash key value ht)
+                  when (eq i (- (length args) 3)) return t)))
 
 (ert-deftest open-one-file-project ()
   "Opens a project with one file"
   ;; generate json file
   (let* ((json-array (vector (make-hash-table)))
          (cmd-hash (aref json-array 0)))
-    (puthash "command" "gcc main.c" cmd-hash)
-    (puthash "directory" default-directory cmd-hash)
-    (puthash "file" (expand-file-name (concat default-directory "main.c")) cmd-hash)
+    (puthashm "command" "gcc main.c"
+              "directory" default-directory
+              "file" (expand-file-name (concat default-directory "main.c")) cmd-hash)
     (with-current-buffer
         (find-file-noselect "compile_commands.json")
       (erase-buffer)
