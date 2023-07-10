@@ -11,7 +11,7 @@
          (cmd-hash (aref json-array 0)))
     (puthash "command" "gcc main.c" cmd-hash)
     (puthash "directory" default-directory cmd-hash)
-    (puthash "file" (concat default-directory "main.c") cmd-hash)
+    (puthash "file" (expand-file-name (concat default-directory "main.c")) cmd-hash)
     (with-current-buffer
         (find-file-noselect "compile_commands.json")
       (erase-buffer)

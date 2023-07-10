@@ -34,6 +34,7 @@ SimpleProj project entry, and, if so, turn on `simpleproj-minor-mode'."
     (cond (matching-project
            (set-variable 'simpleproj-project matching-project)
            (message "\tfile relevant")
+           (message "\t\t%s" simpleproj-projects)
            (simpleproj-minor-mode))
           (t (message "\tfile not relevant %s" (buffer-file-name))
              (message "\t\t%s" simpleproj-projects)))))
