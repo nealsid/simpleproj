@@ -29,15 +29,10 @@
 (defun simpleproj-turn-on-simpleproj-if-project-contains-visited-file ()
   "find-file-hook function to determine if the file being opened is contained within a
 SimpleProj project entry, and, if so, turn on `simpleproj-minor-mode'."
-  (message "hello from hook")
   (let* ((matching-project (simpleproj-find-matching-project-for-buffer)))
     (cond (matching-project
            (set-variable 'simpleproj-project matching-project)
-           (message "\tfile relevant")
-           (message "\t\t%s" simpleproj-projects)
-           (simpleproj-minor-mode))
-          (t (message "\tfile not relevant %s" (buffer-file-name))
-             (message "\t\t%s" simpleproj-projects)))))
+           (simpleproj-minor-mode)))))
 
 (define-minor-mode simpleproj-minor-mode "Simple Project Minor Mode." :lighter " Sproj"
   ;; Mode initialization forms that are run before any hooks.

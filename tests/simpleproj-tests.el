@@ -25,6 +25,4 @@
                               :build-root (expand-file-name default-directory)))))
     (with-current-buffer
         (find-file-noselect "main.c")
-      (message "hello")
-      (message "%s" simpleproj-projects)
       (should (eq simpleproj-minor-mode t)))))
