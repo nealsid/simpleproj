@@ -39,4 +39,7 @@ repeated, and last argument is the hash table."
                               :build-root (expand-file-name default-directory)))))
     (with-current-buffer
         (find-file-noselect "main.c")
-      (should (eq simpleproj-minor-mode t)))))
+      (should (eq simpleproj-minor-mode t))
+      (should (eq simpleproj-project (nth 0 simpleproj-projects)))
+      (should (eq flymake-mode t))
+      (should (equal simpleproj-project (nth 0 simpleproj-projects))))))

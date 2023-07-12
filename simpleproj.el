@@ -31,7 +31,7 @@
 SimpleProj project entry, and, if so, turn on `simpleproj-minor-mode'."
   (let* ((matching-project (simpleproj-find-matching-project-for-buffer)))
     (cond (matching-project
-           (set-variable 'simpleproj-project matching-project)
+           (setq simpleproj-project matching-project)
            (simpleproj-minor-mode)))))
 
 (define-minor-mode simpleproj-minor-mode "Simple Project Minor Mode." :lighter " Sproj"

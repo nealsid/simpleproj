@@ -14,6 +14,16 @@
                                           (apply 'error error-clause))
                                          (t (eval error-clause))))))))
 
+(defmacro new-precondition (forms)
+  (eval `(cond ,@(cl-loop for (precondition-form error-clause)
+                          in (list '((< 1 2) "foo") '((> 0 1) '("bar %s" 5)))
+                          collect (list `(not ,precondition-form) (cond ((or (stringp error-clause)
+                                                                             (and (symbolp error-clause)
+                                                                                  (get error-clause 'error-conditions)))
+                                                                         `(error ,error-clause))
+                                                                        ((listp error-clause)
+                                                                         `(apply 'error ,error-clause))))))))
+
 (defun add-string-to-trie (trie str entry-data str-idx)
   (precondition
    `((not (equal str nil))        ("No input string")
