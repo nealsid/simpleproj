@@ -6,12 +6,12 @@
 
 (defmacro new-precondition (&rest forms)
    `(cond ,@(cl-loop
-                  for (precondition-form error-clause)
-                  in forms
+             for (precondition-form error-clause)
+             in forms
 ;;                  in (list '((< 1 2) "foo") '((> 0 1) '("0 is NOT > 1! %s" 5)))
-                  collect (list
-                           `(not ,precondition-form)
-                           (cond ((raise-via-error error-clause)
-                                  `(error ,error-clause))
-                                 ((listp error-clause)
-                                  `(apply 'error ,error-clause)))))))
+             collect (list
+                      `(not ,precondition-form)
+                      (cond ((raise-via-error error-clause)
+                             `(error ,error-clause))
+                            ((listp error-clause)
+                             `(error ,@error-clause)))))))
