@@ -1,4 +1,5 @@
 (load-file "../simpleproj.el")
+(load-file "../simpleproj-flymake.el")
 (load-file "../simpleproj-db-init-and-load.el")
 (load-file "../simpleproj-db-query.el")
 (load-file "../simpleproj-cc-json-functions.el")
@@ -41,5 +42,31 @@ repeated, and last argument is the hash table."
         (find-file-noselect "main.c")
       (should (eq simpleproj-minor-mode t))
       (should (eq simpleproj-project (nth 0 simpleproj-projects)))
-      (should (eq flymake-mode t))
-      (should (equal simpleproj-project (nth 0 simpleproj-projects))))))
+      (should (eq flymake-mode t)))))
+
+
+(ert-deftest open-one-file-no-command-line-in-db ()
+  "Opens a project with one file that does not have a command line in the database"
+  ;; TODO dedup code with above test.
+  ;; generate json file
+  (let* ((json-array (vector (make-hash-table)))
+         (cmd-hash (aref json-array 0)))
+    (puthashm "command" "gcc main.c"
+              "directory" default-directory
+              "file" (expand-file-name (concat default-directory "main.c")) cmd-hash)
+    (with-current-buffer
+        (find-file-noselect "compile_commands.json")
+      (erase-buffer)
+      (insert (json-serialize json-array))
+      (save-buffer)))
+  (delete-file (concat default-directory "sproj-compilation-commands.sqlite3"))
+  (let ((simpleproj-projects (list (make-simple-project
+                              :project-name "Hello, World"
+                              :project-short-name "helloworld"
+                              :source-root (expand-file-name default-directory)
+                              :build-root (expand-file-name default-directory)))))
+    (with-current-buffer
+        (find-file-noselect "kldjflkjd.c")
+      (should (eq simpleproj-minor-mode t))
+      (should (eq simpleproj-project (nth 0 simpleproj-projects)))
+      (should (eq flymake-mode nil)))))

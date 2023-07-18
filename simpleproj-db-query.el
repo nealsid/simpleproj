@@ -1,8 +1,5 @@
 (require 'sqlite)
 
-(defvar simpleproj--db-ready-hook nil
-  "Hook run after the database for the current project is initialized")
-
 (defun simpleproj-query-for-file-flymake-settings (sproj file-name)
   (let ((db (simple-project--db sproj)))
     (cl-assert db)

@@ -1,4 +1,15 @@
-;; Functions for initializing and loading a project database.
+;;; simpleproject-db-init-and-load.el --- Functions for initializing
+;;; and loading a project database.
+;;;
+;;; Commentary:
+;;;
+;;; This file contains functions necessary for initializing and
+;;; loading a SQLite database with SimpleProj related information.
+
+;;; Code:
+(defvar simpleproj--db-ready-hook nil
+  "Hook run after the database for the current project is initialized")
+
 (defun simpleproj-open-db-for-project (sproj)
   (cond ((simpleproj-database-should-be-created sproj)
          (simpleproj-create-database-and-initialize-sqlite sproj)

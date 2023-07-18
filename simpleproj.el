@@ -8,6 +8,8 @@
 
 ;;; Code:
 
+(require 'cl)
+
 (defvar-local simpleproj-project nil
   "Buffer-local variable referring to the simple project structure for this buffer")
 
