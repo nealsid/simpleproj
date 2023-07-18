@@ -8,7 +8,6 @@
    `(cond ,@(cl-loop
              for (precondition-form error-clause)
              in forms
-;;                  in (list '((< 1 2) "foo") '((> 0 1) '("0 is NOT > 1! %s" 5)))
              collect (list
                       `(not ,precondition-form)
                       (cond ((raise-via-error error-clause)
