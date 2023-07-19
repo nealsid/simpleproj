@@ -6,12 +6,10 @@
      (simple-project-build-root (nth 0 simpleproj-projects))
      "/compile_commands.json"))))
 
-
 (defun parse-json-chunk (i)
   (make-compile-commands-json
    (concat (simple-project-build-root (nth 0 simpleproj-projects))
            "/compile_commands-" (number-to-string i) ".json")))
-
 
 (setq parsed-json nil)
 
@@ -65,7 +63,6 @@
       (dotimes (i number-chunks)
         (push (* i chunk-size) chunk-positions))
       chunk-positions)))
-
 
 divide-json-file-into-equal-size-chunks
 (divide-json-file-into-equal-size-chunks

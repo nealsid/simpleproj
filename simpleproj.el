@@ -33,12 +33,11 @@ SimpleProj project entry, and, if so, turn on `simpleproj-minor-mode'."
            (setq simpleproj-project matching-project)
            (simpleproj-minor-mode)))))
 
+(add-hook 'simpleproj--db-ready-hook 'simpleproj-configure-flymake)
+
 (define-minor-mode simpleproj-minor-mode "Simple Project Minor Mode." :lighter " Sproj"
   ;; Mode initialization forms that are run before any hooks.
   (simpleproj-open-db-for-project simpleproj-project))
-
-(add-hook 'simpleproj--db-ready-hook 'simpleproj-configure-flymake)
-
 
 (cl-defun add-simple-project (&key project-name
                                    project-short-name
@@ -73,6 +72,4 @@ SimpleProj project entry, and, if so, turn on `simpleproj-minor-mode'."
                                         simpleproj-projects)))
     (cond ((= (length matching-projects) 1)
            (nth 0 matching-projects))
-          ((> (length matching-projects) 1)
-           (error "More than 1 project matching %s found." filename))
           nil)))
