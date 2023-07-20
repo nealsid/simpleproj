@@ -20,7 +20,7 @@
        (insert (json-serialize json-array))
        (save-buffer)
        (kill-buffer)))
-   (delete-file (concat project-dir "sproj-compilation-commands.sqlite3")))s
+   (delete-file (concat project-dir "sproj-compilation-commands.sqlite3")))
 
 (defmacro with-project-and-directory (project-dir-name-binding &rest forms)
   "Macro to wrap a test case body that creates bindings for the
@@ -37,8 +37,9 @@ SimpleProj project that refers to the directory."
        ,@forms)))
 
 (defmacro with-current-buffer-close (buffer-or-name &rest body)
-  `(with-current-buffer ,buffer-or-name body)
-  `(kill-buffer ,buffer-or-name))
+  `(progn
+     (with-current-buffer ,buffer-or-name ,@body)
+     (kill-buffer ,buffer-or-name)))
 
 (ert-deftest open-one-file-project ()
   "Opens a project with one file"
@@ -47,7 +48,11 @@ SimpleProj project that refers to the directory."
    (with-current-buffer-close
        (find-file-noselect (concat project-dir "main.c"))
      (should (eq simpleproj-minor-mode t))
+     ;; intentional to use EQ since the buffer local variable should
+     ;; be a reference to an item in the global list.
      (should (eq simpleproj-project (nth 0 simpleproj-projects)))
+     (should (equal simpleproj-flymake-command-line '("gcc" "-x" "c" "-fsyntax-only" "-")))
+     (should (string-equal simpleproj-flymake-working-directory project-dir))
      (should (eq flymake-mode t)))))
 
 (ert-deftest open-one-file-no-command-line-in-db ()
@@ -61,6 +66,8 @@ SimpleProj project that refers to the directory."
        (find-file-noselect (concat project-dir "kldjflkjd.c"))
      (should (eq simpleproj-minor-mode t))
      (should (eq simpleproj-project (nth 0 simpleproj-projects)))
+     (should (eq simpleproj-flymake-command-line nil))
+     (should (eq simpleproj-flymake-working-directory nil))
      (should (eq flymake-mode nil)))))
 
 (ert-deftest open-one-file-multiple-containing-projects ()
@@ -76,4 +83,6 @@ SimpleProj project that refers to the directory."
    (with-current-buffer-close
        (find-file-noselect (concat project-dir "kldjflkjd.c"))
      (should (eq simpleproj-minor-mode nil))
+     (should (eq simpleproj-flymake-command-line nil))
+     (should (eq simpleproj-flymake-working-directory nil))
      (should (eq simpleproj-project nil)))))
