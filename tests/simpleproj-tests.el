@@ -7,13 +7,44 @@
 (require 'gv)
 (require 'cl)
 
-(defmacro with-temp-project-directory (dir-name-binding &rest forms)
-  `(let* ((,dir-name-binding (concat (make-temp-file "simpleproj-" t) "/")))
-    (progn ,@forms)))
+(defun create-test-compile-command-json (project-dir)
+   (let* ((json-array (vector (make-hash-table)))
+          (cmd-hash (aref json-array 0)))
+     (puthashm "command" "gcc main.c"
+               "directory" project-dir
+               "file" (concat project-dir "main.c") cmd-hash)
+     (with-current-buffer
+         (find-file-noselect (concat project-dir "compile_commands.json") t t nil)
+       (erase-buffer)
+       (insert (json-serialize json-array))
+       (save-buffer)))
+   (delete-file (concat project-dir "sproj-compilation-commands.sqlite3")))
 
-(defmacro with-current-buffer-close (buffer-or-name &rest BODY)
+(defmacro with-project-and-directory (project-dir-name-binding &rest forms)
+  `(let* ((,project-dir-name-binding (concat (make-temp-file "simpleproj-" t) "/"))
+          (simpleproj-projects (list (make-simple-project
+                                     :project-name "Hello, World"
+                                     :project-short-name "helloworld"
+                                     :source-root ,project-dir-name-binding
+                                     :build-root ,project-dir-name-binding))))
+     (progn
+       (create-test-compile-command-json ,project-dir-name-binding)
+       ,@forms)))
+
+(defmacro with-current-buffer-close (buffer-or-name &rest body)
   `(with-current-buffer buffer-or-name body)
   `(kill-buffer buffer-or-name))
+
+(defmacro sproj-deftest (name () &body docstring-keys-and-body)
+  (when (stringp (car docstring-keys-and-body))
+    (pop docstring-keys-and-body))
+  (cl-destructuring-bind
+       (&key (expected-result nil expected-result-supplied-p)
+             (tags nil tags-supplied-p))
+       body)
+      (ert--parse-keys-and-body docstring-keys-and-body)
+      (ert-deftest name ()
+        docstring-keys-and-body))
 
 (ert-deftest open-one-file-project ()
   "Opens a project with one file"
@@ -41,6 +72,16 @@
        (should (eq simpleproj-minor-mode t))
        (should (eq simpleproj-project (nth 0 simpleproj-projects)))
        (should (eq flymake-mode t))))))
+
+(ert-deftest open-one-file-project-2 ()
+  "Opens a project with one file"
+  (with-project-and-directory
+   project-dir
+   (with-current-buffer
+       (find-file-noselect (concat project-dir "main.c"))
+     (should (eq simpleproj-minor-mode t))
+     (should (eq simpleproj-project (nth 0 simpleproj-projects)))
+     (should (eq flymake-mode t)))))
 
 (ert-deftest open-one-file-no-command-line-in-db ()
   "Opens a project with one file that does not have a command line in the database"
