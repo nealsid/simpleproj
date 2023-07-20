@@ -20,7 +20,7 @@
        (insert (json-serialize json-array))
        (save-buffer)
        (kill-buffer)))
-   (delete-file (concat project-dir "sproj-compilation-commands.sqlite3")))
+   (delete-file (concat project-dir "sproj-compilation-commands.sqlite3")))s
 
 (defmacro with-project-and-directory (project-dir-name-binding &rest forms)
   "Macro to wrap a test case body that creates bindings for the
@@ -39,17 +39,6 @@ SimpleProj project that refers to the directory."
 (defmacro with-current-buffer-close (buffer-or-name &rest body)
   `(with-current-buffer ,buffer-or-name body)
   `(kill-buffer ,buffer-or-name))
-
-(defmacro sproj-deftest (name () &body docstring-keys-and-body)
-  (when (stringp (car docstring-keys-and-body))
-    (pop docstring-keys-and-body))
-  (cl-destructuring-bind
-       (&key (expected-result nil expected-result-supplied-p)
-             (tags nil tags-supplied-p))
-       body)
-      (ert--parse-keys-and-body docstring-keys-and-body)
-      (ert-deftest name ()
-        docstring-keys-and-body))
 
 (ert-deftest open-one-file-project ()
   "Opens a project with one file"
