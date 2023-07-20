@@ -14,12 +14,11 @@
      (puthashm "command" "gcc main.c"
                "directory" project-dir
                "file" (concat project-dir "main.c") cmd-hash)
-     (with-current-buffer
+     (with-current-buffer-close
          (find-file-noselect (concat project-dir "compile_commands.json") t t nil)
        (erase-buffer)
        (insert (json-serialize json-array))
-       (save-buffer)
-       (kill-buffer)))
+       (save-buffer)))
    (delete-file (concat project-dir "sproj-compilation-commands.sqlite3")))
 
 (defmacro with-project-and-directory (project-dir-name-binding &rest forms)
@@ -61,20 +60,18 @@ SimpleProj project that refers to the directory."
   ;; generate json file
   (with-project-and-directory
    project-dir
-   (message "project dir: %s" project-dir)
    (with-current-buffer-close
        (find-file-noselect (concat project-dir "kldjflkjd.c"))
      (should (eq simpleproj-minor-mode t))
      (should (eq simpleproj-project (nth 0 simpleproj-projects)))
-     (should (eq simpleproj-flymake-command-line nil))
-     (should (eq simpleproj-flymake-working-directory nil))
+     (should (not (bound-and-true-p simpleproj-flymake-command-line)))
+     (should (not (bound-and-true-p simpleproj-flymake-working-directory)))
      (should (eq flymake-mode nil)))))
 
 (ert-deftest open-one-file-multiple-containing-projects ()
   "Opens a file that is contained in multiple projects in order to ensure an error is raised."
   (with-project-and-directory
    project-dir
-   (message "project dir: %s" project-dir)
    (push (make-simple-project
           :project-name "Hello, World #2"
           :project-short-name "helloworldno2"
@@ -83,6 +80,6 @@ SimpleProj project that refers to the directory."
    (with-current-buffer-close
        (find-file-noselect (concat project-dir "kldjflkjd.c"))
      (should (eq simpleproj-minor-mode nil))
-     (should (eq simpleproj-flymake-command-line nil))
-     (should (eq simpleproj-flymake-working-directory nil))
-     (should (eq simpleproj-project nil)))))
+     (should (not (bound-and-true-p simpleproj-flymake-command-line)))
+     (should (not (bound-and-true-p simpleproj-flymake-working-directory)))
+     (should (not (bound-and-true-p simpleproj-project))))))
