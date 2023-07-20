@@ -8,13 +8,12 @@
 (require 'cl)
 
 (defmacro with-temp-project-directory (dir-name-binding &rest forms)
-  `(let* ((,dir-name-binding (make-temp-file "simpleproj-" t)))
+  `(let* ((,dir-name-binding (concat (make-temp-file "simpleproj-" t) "/")))
     (progn ,@forms)))
 
 (defmacro with-current-buffer-close (buffer-or-name &rest BODY)
   `(with-current-buffer buffer-or-name body)
-  `(with-current-buffer buffer-or-name
-     (kill-buffer (current-buffer))))
+  `(kill-buffer buffer-or-name))
 
 (ert-deftest open-one-file-project ()
   "Opens a project with one file"
@@ -25,9 +24,9 @@
           (cmd-hash (aref json-array 0)))
      (puthashm "command" "gcc main.c"
                "directory" project-dir
-               "file" (concat project-dir "/main.c") cmd-hash)
+               "file" (concat project-dir "main.c") cmd-hash)
      (with-current-buffer
-         (find-file-noselect (concat project-dir "/compile_commands.json"))
+         (find-file-noselect (concat project-dir "compile_commands.json"))
        (erase-buffer)
        (insert (json-serialize json-array))
        (save-buffer)))
@@ -54,20 +53,20 @@
           (cmd-hash (aref json-array 0)))
      (puthashm "command" "gcc main.c"
                "directory" default-directory
-               "file" (expand-file-name (concat default-directory "main.c")) cmd-hash)
+               "file" (expand-file-name (concat project-dir "main.c")) cmd-hash)
      (with-current-buffer
-         (find-file-noselect "compile_commands.json")
+         (find-file-noselect (concat project-dir "compile_commands.json"))
        (erase-buffer)
        (insert (json-serialize json-array))
        (save-buffer)))
-   (delete-file (concat default-directory "sproj-compilation-commands.sqlite3"))
+   (delete-file (concat project-dir "sproj-compilation-commands.sqlite3"))
    (let ((simpleproj-projects (list (make-simple-project
                                      :project-name "Hello, World"
                                      :project-short-name "helloworld"
                                      :source-root project-dir
                                      :build-root project-dir))))
      (with-current-buffer
-         (find-file-noselect "kldjflkjd.c")
+         (find-file-noselect (concat project-dir "kldjflkjd.c"))
        (should (eq simpleproj-minor-mode t))
        (should (eq simpleproj-project (nth 0 simpleproj-projects)))
        (should (eq flymake-mode nil))))))
@@ -88,6 +87,6 @@
                                      :source-root project-dir
                                      :build-root project-dir))))
      (with-current-buffer
-         (find-file-noselect (concat project-dir "/kldjflkjd.c"))
+         (find-file-noselect (concat project-dir "kldjflkjd.c"))
        (should (eq simpleproj-minor-mode nil))
        (should (eq simpleproj-project nil))))))
