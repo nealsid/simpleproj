@@ -1,9 +1,9 @@
 (load-file "../util.el")
-(load-file "../simpleproj.el")
-(load-file "../simpleproj-flymake.el")
-(load-file "../simpleproj-db-init-and-load.el")
-(load-file "../simpleproj-db-query.el")
-(load-file "../simpleproj-cc-json-functions.el")
+(load-file "../core/simpleproj.el")
+(load-file "../features/simpleproj-flymake.el")
+(load-file "../core/simpleproj-db-init-and-load.el")
+(load-file "../core/simpleproj-db-query.el")
+(load-file "../features/simpleproj-cc-json-functions.el")
 (require 'gv)
 (require 'cl)
 
@@ -56,8 +56,6 @@ SimpleProj project that refers to the directory."
 
 (ert-deftest open-one-file-no-command-line-in-db ()
   "Opens a project with one file that does not have a command line in the database"
-  ;; TODO dedup code with above test.
-  ;; generate json file
   (with-project-and-directory
    project-dir
    (with-current-buffer-close
