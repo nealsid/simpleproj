@@ -10,7 +10,7 @@
              in forms
              collect (list
                       `(not ,precondition-form)
-                      (cond ((raise-via-error error-clause)
+                      (cond ((raise-via-error error-clause )
                              `(error ,error-clause))
                             ((listp error-clause)
                              `(error ,@error-clause)))))))
