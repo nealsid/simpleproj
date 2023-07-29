@@ -9,3 +9,8 @@
              (cl-assert (length= (nth 0 query-result) 2))
              (nth 0 query-result))
             nil))))
+
+(defun simpleproj-update-flymake-command-line-for-file (sproj file-name compile-command)
+  (local ((db (simple-project--db sproj))
+          (update-statement "update compilation_commands set compile_command = ? where file_name = ?" ))
+    (cl-assert (eq 1 (sqlite-execute db update-statement (list compile_command file_name))))))

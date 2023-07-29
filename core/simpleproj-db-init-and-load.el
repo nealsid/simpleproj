@@ -12,8 +12,9 @@
 
 (defun simpleproj-open-db-for-project (sproj)
   (cond ((simpleproj-database-should-be-created sproj)
-         (simpleproj-create-database-and-initialize-sqlite sproj)
-         (parse-json-into-sqlite-table sproj))
+         (progn
+           (simpleproj-create-database-and-initialize-sqlite sproj)
+           (parse-json-into-sqlite-table sproj)))
         (t (simpleproj-initialize-sqlite-for-project sproj)))
   (run-hooks 'simpleproj--db-ready-hook))
 
@@ -41,33 +42,26 @@
 
 (defun parse-json-into-sqlite-table (sproj)
   (let* ((gc-cons-threshold 10000000000)
-         (json-load-sql (format "insert into compilation_commands (file_name, compile_command, working_directory) \
-                                                        values (?, ?, ?)"))
          (db (simple-project--db sproj))
          (json (make-compile-commands-json (concat (simple-project-build-root sproj) "/compile_commands.json"))))
     (sqlite-transaction db)
     (mapc 'insert-json-entry-into-db json)
     (sqlite-commit db)))
 
-(defun simpleproj-database-should-be-created (sproj)
-  (let ((sproj-sqlite-db-filename (concat (simple-project-build-root sproj) "/sproj-compilation-commands.sqlite3"))
-        (compile-commands-json (concat (simple-project-build-root sproj) "/compile_commands.json")))
-    (cond ((not (file-exists-p sproj-sqlite-db-filename)) t)
-          ((file-newer-than-file-p compile-commands-json sproj-sqlite-db-filename) t)
-          (t nil))))
-
 (defun insert-json-entry-into-db (json-entry)
   (let* ((file-full-path (gethash "file" json-entry))
          (file-compilation-command
           (transform-build-command-line-into-flymake-command-line
            (gethash "command" json-entry) file-full-path))
+         (json-load-dml (format "insert into compilation_commands (file_name, compile_command, working_directory) \
+                                                        values (?, ?, ?)"))
          (file-compilation-wd (gethash "directory" json-entry)))
     ;; Sometimes compile_commands.json files will have
     ;; duplicate entries for the same file, so ignore that
     ;; case by catching the error and continuing.
     ;; TODO use "insert into or ignore" or "insert where not exists"
     (condition-case raised-error
-        (sqlite-execute db json-load-sql (list file-full-path file-compilation-command file-compilation-wd))
+        (sqlite-execute db json-load-dml (list file-full-path file-compilation-command file-compilation-wd))
       (sqlite-error
        (let ((sqlite-error-message (cadr raised-error)))
          (cond ((string-equal "UNIQUE constraint failed: compilation_commands.file_name"
@@ -76,10 +70,17 @@
                     (sqlite-commit db)
                     (signal (car raised-error) (cdr raised-error))))))))))
 
+(defun simpleproj-database-should-be-created (sproj)
+  (let ((sproj-sqlite-db-filename (concat (simple-project-build-root sproj) "/sproj-compilation-commands.sqlite3"))
+        (compile-commands-json (concat (simple-project-build-root sproj) "/compile_commands.json")))
+    (cond ((not (file-exists-p sproj-sqlite-db-filename)) t)
+          ((file-newer-than-file-p compile-commands-json sproj-sqlite-db-filename) t)
+          (t nil))))
+
 (defun gcc-language-option-for-extension (extension)
   (cond ((string-equal-ignore-case extension "c") "c")
         ((member extension '("cc" "cpp" "cxx")) "c++")
-        (t (error "Invalid extension %s" extension))))
+        (nil)))
 
 (defmacro replace-multiple-regexps (regexps-and-replacements input-string)
   "Macro which takes a set of regular expressions and replacements and generates a loop over the set to call replace-regexp-in-string.  This makes it easier to read as you can avoid repeatedly setting a temp variable to the result of replace-regexp-in-string in order to pass it to the next call to replace-regexp-in-string. The form of regexps-and-replacements is a list of cons cells, where each cons cell is of the form (regexp . replacement)"

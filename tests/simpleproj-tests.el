@@ -1,4 +1,4 @@
-(load-file "../util.el")
+(load-file "../core/util.el")
 (load-file "../core/simpleproj.el")
 (load-file "../features/simpleproj-flymake.el")
 (load-file "../core/simpleproj-db-init-and-load.el")

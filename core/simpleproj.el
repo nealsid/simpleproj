@@ -26,8 +26,9 @@
   (-visited-buffers nil :documentation "(private) Variable containing list of buffers that are visiting files in this project"))
 
 (defun simpleproj-turn-on-simpleproj-if-project-contains-visited-file ()
-  "find-file-hook function to determine if the file being opened is contained within a
-SimpleProj project entry, and, if so, turn on `simpleproj-minor-mode'."
+  "find-file-hook function to determine if the file being opened is
+contained within a SimpleProj project entry, and, if so, turn on
+`simpleproj-minor-mode`."
   (let* ((matching-project (simpleproj-find-matching-project-for-buffer)))
     (cond (matching-project
            (setq simpleproj-project matching-project)
