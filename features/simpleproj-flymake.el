@@ -54,3 +54,32 @@ invoked."
       ;; is not related to a simple project.
       (advice-add 'flymake-cc :around #'simpleproj-flymake-cc-advice-change-wd)
       (flymake-mode))))
+
+(defun simpleproj-edit-command-line-for-current-file ()
+  (new-precondition
+   ((bound-and-true-p simpleproj-project) "No simple proj in current buffer"))
+  (local ((edit-buffer-name (format "*simpleproj command line for %s*" (file-name-nondirectory (buffer-file-name))))
+          (command-line (string-join (simpleproj-get-compilation-command-for-flymake) " ")))
+    (switch-to-buffer-other-window (get-buffer-create edit-buffer-name))
+    (erase-buffer)
+    (auto-fill-mode)
+    (font-lock-add-keywords nil '(("^\\#.*" . font-lock-comment-face)))
+    (insert "# This buffer is for editing the command line for a file in a SimpleProj project.  Only GCC is currently supported, and you must make sure to:")
+    (fill-paragraph)
+    (insert "
+#
+# - Use '-' in order to have gcc read from STDIN (This is how Flymake passes files that have not been saved to the compiler).\n# - Use '-fsyntax-only'.\n# - Pass '-c <gcc language option>'")
+;;    (fill-paragraph)
+    (font-lock-mode)
+    (insert "\n\n" command-line)
+    (beginning-of-buffer)
+    (message "%s" edit-buffer-name)))
+
+
+
+(defun simpleproj-save-current-command-line ()
+  (new-precondition
+   ((bound-and-true-p (buffer-local-value 'simpleproj-project (current-buffer))) "No simple proj in current buffer"))
+
+
+  )
