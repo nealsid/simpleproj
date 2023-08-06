@@ -30,4 +30,13 @@
       (insert (concat "(define-package \"" sproj--proj-name "\" \"" sproj--version "\" \"" sproj--description "\")"))
       (save-buffer))
     (shell-command (concat "tar cvf " package-tar-fn " " package-relative-directory))
-    (dired default-directory)))
+    (concat packaging-root-dir package-tar-fn)))
+
+(defun sproj--rebuild-and-reinstall ()
+  (interactive)
+  (let ((package-filename (sproj--make-elisp-pkg))
+        (package-desc (cadr (assq 'simpleproj package-alist))))
+    (when package-desc
+      (package-delete package-desc))
+    (package-install-file package-filename)
+    (message "Installed from %s" package-filename)))

@@ -75,11 +75,9 @@ invoked."
     (beginning-of-buffer)
     (message "%s" edit-buffer-name)))
 
+;; (defun simpleproj-save-current-command-line ()
+;;   (new-precondition
+;;    ((bound-and-true-p (buffer-local-value 'simpleproj-project (current-buffer))) "No simple proj in current buffer"))
 
 
-(defun simpleproj-save-current-command-line ()
-  (new-precondition
-   ((bound-and-true-p (buffer-local-value 'simpleproj-project (current-buffer))) "No simple proj in current buffer"))
-
-
-  )
+;;   )
