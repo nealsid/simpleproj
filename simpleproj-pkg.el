@@ -1,12 +1,11 @@
-(define-package "simpleproj" "0.7" "SimpleProj is an elisp library to help manage project-related development tasks." nil)
-
 (setq sproj--proj-name "simpleproj")
 (setq sproj--version "0.7")
 (setq sproj--root-dir "/home/nealsid/git/simpleprojelisp/")
+(setq sproj--description "SimpleProj is an elisp library to help manage project-related development tasks.")
+(setq sproj--package-file-name "simpleproj-pkg.el")
 
 (setq sproj--file-list
-      '("simpleproj-pkg.el"
-        "core/simpleproj.el"
+      '("core/simpleproj.el"
         "core/simpleproj-db-init-and-load.el"
         "core/simpleproj-db-query.el"
         "core/util.el"
@@ -27,5 +26,8 @@
     (mapc (lambda (fn)
             (copy-file (concat sproj--root-dir fn) (concat package-root-dir (file-name-nondirectory fn))))
           sproj--file-list)
+    (with-current-buffer (find-file-noselect (concat package-root-dir sproj--package-file-name))
+      (insert (concat "(define-package \"" sproj--proj-name "\" \"" sproj--version "\" \"" sproj--description "\")"))
+      (save-buffer))
     (shell-command (concat "tar cvf " package-tar-fn " " package-relative-directory))
     (dired default-directory)))
