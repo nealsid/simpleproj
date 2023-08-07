@@ -31,7 +31,7 @@ contained within a SimpleProj project entry, and, if so, turn on
 `simpleproj-minor-mode`."
   (let* ((matching-project (simpleproj-find-matching-project-for-buffer)))
     (cond (matching-project
-           (sproj-log "SimpleProj: found matching project %s" (simple-project-project-name matching-project))
+           (sproj--log "found matching project %s" (simple-project-project-name matching-project))
            (setq simpleproj-project matching-project)
            (simpleproj-minor-mode)))))
 
@@ -74,8 +74,11 @@ contained within a SimpleProj project entry, and, if so, turn on
                                         simpleproj-projects)))
     (cond ((= (length matching-projects) 1)
            (nth 0 matching-projects))
+          ((length> matching-projects 1)
+           (sproj--log "more than one project for %s" filename)
+           nil)
           nil)))
 
-(defun sproj-log (format-string &rest args)
+(defun sproj--log (format-string &rest args)
   (let ((inhibit-message t))
-    (message format-string args)))
+    (message (concat "simpleproj: " format-string) args)))

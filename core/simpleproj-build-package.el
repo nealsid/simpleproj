@@ -28,7 +28,8 @@
           sproj--file-list)
     (with-current-buffer (find-file-noselect (concat package-root-dir sproj--package-file-name))
       (insert (concat "(define-package \"" sproj--proj-name "\" \"" sproj--version "\" \"" sproj--description "\")"))
-      (save-buffer))
+      (save-buffer)
+      (kill-buffer))
     (shell-command (concat "tar cvf " package-tar-fn " " package-relative-directory))
     (concat packaging-root-dir package-tar-fn)))
 

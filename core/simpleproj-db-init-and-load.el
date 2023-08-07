@@ -73,9 +73,15 @@
 (defun simpleproj-database-should-be-created (sproj)
   (let ((sproj-sqlite-db-filename (concat (simple-project-build-root sproj) "/sproj-compilation-commands.sqlite3"))
         (compile-commands-json (concat (simple-project-build-root sproj) "/compile_commands.json")))
-    (cond ((not (file-exists-p sproj-sqlite-db-filename)) t)
-          ((file-newer-than-file-p compile-commands-json sproj-sqlite-db-filename) t)
-          (t nil))))
+    (cond ((not (file-exists-p sproj-sqlite-db-filename))
+           (sproj--log "%s database does not exist, creating" (simple-project-project-name sproj))
+           t)
+          ((file-newer-than-file-p compile-commands-json sproj-sqlite-db-filename)
+           (sproj--log "%s database exists and out of date, recreating" (simple-project-project-name sproj))
+           t)
+          ((progn
+             (sproj--log "%s database exists and up-to-date" (simple-project-project-name sproj))
+             nil)))))
 
 (defun gcc-language-option-for-extension (extension)
   (cond ((string-equal-ignore-case extension "c") "c")

@@ -32,7 +32,9 @@ invoked."
           simpleproj-project
           (buffer-file-name))))
     (if (not flymake-settings-for-file)
-        nil
+        (progn
+          (sproj--log "no flymake settings for %s" (buffer-file-name))
+          nil)
       (defvar-local simpleproj-flymake-command-line nil
         "Buffer-local variable referring to the Flymake command line for this buffer")
       (defvar-local simpleproj-flymake-working-directory nil
