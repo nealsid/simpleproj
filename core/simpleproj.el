@@ -8,77 +8,14 @@
 
 ;;; Code:
 
-(require 'cl)
-
-(defvar-local simpleproj-project nil
-  "Buffer-local variable referring to the simple project structure for this buffer")
-
-(add-hook 'find-file-hook 'simpleproj-turn-on-simpleproj-if-project-contains-visited-file)
-
-(cl-defstruct simple-project
-  "SimpleProj Project Structure."
-  (project-name nil :documentation "Project name")
-  (project-short-name nil :documentation "Abbreviated project name")
-  (source-root nil :documentation "Source root for the project")
-  (build-root nil :documentation "Build root for the project")
-  (compile-commands-command nil :documentation "Command to generate compile_commands.json file")
-  (-db nil :documentation "(private) Variable containing reference to db")
-  (-visited-buffers nil :documentation "(private) Variable containing list of buffers that are visiting files in this project"))
-
-(defun simpleproj-turn-on-simpleproj-if-project-contains-visited-file ()
-  "find-file-hook function to determine if the file being opened is
-contained within a SimpleProj project entry, and, if so, turn on
-`simpleproj-minor-mode`."
-  (let* ((matching-project (simpleproj-find-matching-project-for-buffer)))
-    (cond (matching-project
-           (sproj--log "found matching project %s" (simple-project-project-name matching-project))
-           (setq simpleproj-project matching-project)
-           (simpleproj-minor-mode)))))
-
-(add-hook 'simpleproj--db-ready-hook 'simpleproj-configure-flymake)
-
-(define-minor-mode simpleproj-minor-mode "Simple Project Minor Mode." :lighter " Sproj"
-  ;; Mode initialization forms that are run before any hooks.
-  (simpleproj-open-db-for-project simpleproj-project))
-
-(cl-defun add-simple-project (&key project-name
-                                   project-short-name
-                                   source-root
-                                   build-root
-                                   compile-commands-command)
-  (add-to-list 'simpleproj-projects
-               (make-simple-project :project-name project-name
-                                    :project-short-name project-short-name
-                                    :source-root source-root
-                                    :build-root build-root
-                                    :compile-commands-command compile-commands-command)))
-
-(defvar simpleproj-projects '()
-  "Global list of simple projects")
-
-(define-error 'compilation-commands-missing "No compilation commands json file in build root")
-
-(add-simple-project :project-name "Linux kernel"
-                    :project-short-name "Kernel"
-                    :source-root "/home/nealsid/git/linux"
-                    :build-root "/home/nealsid/git/linux"
-                    :compile-commands-command "make compile_commands.json")
-
-(defun simpleproj-find-matching-project-for-buffer ()
-  "Returns the matching project for the current buffer or NIL if none found."
-  (let* ((filename (buffer-file-name))
-         (matching-projects (seq-filter (lambda (project)
-                                          (if (string-prefix-p (simple-project-source-root project) filename t)
-                                              project
-                                            nil))
-                                        simpleproj-projects)))
-    (cond ((= (length matching-projects) 1)
-           (nth 0 matching-projects))
-          ((length> matching-projects 1)
-           (sproj--log "more than one project for %s" filename)
-           nil)
-          nil)))
-
-(defun sproj--log (format-string &rest args)
-  (let ((inhibit-message t))
-    (message (concat "simpleproj: " format-string) args)))
+(load-file "simpleproj-main.el")
+(load-file "simpleproj-db-init-and-load.el")
+(load-file "simpleproj-db-query.el")
+(load-file "simpleproj-main.el")
+(load-file "simpleproj.el")
+(load-file "sproj--build-package.el")
+(load-file "util.el")
+(load-file "../features/simpleproj-cc-json-functions.el")
+(load-file "../features/simpleproj-flymake.el")
+;; (load-file "../tests/simpleproj-tests.el")
+;; (load-file "../tests/util-test.el")
