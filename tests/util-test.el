@@ -1,5 +1,3 @@
-(load-file "../core/util.el")
-
 (ert-deftest simple-precondition-failure ()
   "Verifies that a simple bad precondition fails"
   (should-error

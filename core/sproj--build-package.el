@@ -10,6 +10,7 @@
         "core/simpleproj-db-init-and-load.el"
         "core/simpleproj-db-query.el"
         "core/util.el"
+        "core/sproj--build-package.el"
         "features/simpleproj-cc-json-functions.el"
         "features/simpleproj-flymake.el"
         "tests/main.c"

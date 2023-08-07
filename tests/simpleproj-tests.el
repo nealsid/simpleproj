@@ -1,9 +1,3 @@
-(load-file "../core/util.el")
-(load-file "../core/simpleproj.el")
-(load-file "../features/simpleproj-flymake.el")
-(load-file "../core/simpleproj-db-init-and-load.el")
-(load-file "../core/simpleproj-db-query.el")
-(load-file "../features/simpleproj-cc-json-functions.el")
 (require 'gv)
 (require 'cl)
 

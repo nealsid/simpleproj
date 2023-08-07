@@ -75,4 +75,4 @@ contained within a SimpleProj project entry, and, if so, turn on
 
 (defun sproj--log (format-string &rest args)
   (let ((inhibit-message t))
-    (message (concat "simpleproj: " format-string) args)))
+    (apply 'message (concat "simpleproj: " format-string) args)))
