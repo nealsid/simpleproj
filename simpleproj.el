@@ -1,4 +1,4 @@
-;;; simpleproject --- A project to make some project related tasks easier (for;;; simpleproject --- A project to make some project related tasks easier (for me)
+;;; simpleproject --- A project to make some project related tasks easier (for me)
 ;;;
 ;;; Commentary:
 ;;;
